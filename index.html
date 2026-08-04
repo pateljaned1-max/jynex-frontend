@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Janendra Patel - AI/ML Engineer in Training. Portfolio showcasing Machine Learning, Deep Learning, Computer Vision, and Data Science projects." />
+  <meta name="keywords" content="Janendra Patel, AI Engineer, ML Engineer, B.Tech AI ML, P P Savani University, Portfolio, Deep Learning, Machine Learning" />
+  <meta name="author" content="Janendra Patel" />
+  
+  <title>Janendra Patel | AI & ML Engineer</title>
+
+  <!-- Google Fonts: Space Grotesk (Headings), Inter (Body), JetBrains Mono (Code/Metrics) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM & CSS VARIABLES
+       ========================================================================== */
+    :root {
+      /* Color Palette */
+      --bg-dark: #080b11;
+      --bg-surface: #0e1320;
+      --bg-surface-elevated: #151c2e;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      
+      --accent-cyan: #00f0ff;
+      --accent-cyan-glow: rgba(0, 240, 255, 0.35);
+      --accent-violet: #7000ff;
+      --accent-violet-glow: rgba(112, 0, 255, 0.35);
+      --accent-green: #00ff88;
+      
+      --text-main: #f0f4f8;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(0, 240, 255, 0.3);
+      
+      /* Typography */
+      --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-code: 'JetBrains Mono', monospace;
+      
+      /* Layout & Spacing */
+      --container-max: 1200px;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      
+      /* Transitions */
+      --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      --transition-normal: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Base Reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      color-scheme: dark;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(112, 0, 255, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 70%, rgba(0, 240, 255, 0.1) 0%, transparent 45%),
+        linear-gradient(to bottom, rgba(8, 11, 17, 0.95), var(--bg-dark));
+      background-attachment: fixed;
+    }
+
+    /* Accessibility: Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* Focus States */
+    :focus-visible {
+      outline: 2px solid var(--accent-cyan);
+      outline-offset: 4px;
+    }
+
+    /* Typography Helpers */
+    h1, h2, h3, h4, .font-heading {
+      font-family: var(--font-heading);
+      letter-spacing: -0.02em;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 20%, var(--accent-cyan) 60%, var(--accent-violet) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .code-text {
+      font-family: var(--font-code);
+    }
+
+    /* Layout Containers */
+    .container {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    section {
+      padding: 6rem 0;
+      position: relative;
+    }
+
+    /* Glassmorphism Card Style */
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .glass-card:hover {
+      border-color: var(--border-glow);
+      box-shadow: 0 10px 30px -10px rgba(0, 240, 255, 0.15);
+      transform: translateY(-4px);
+    }
+
+    /* Section Headers */
+    .section-title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-title i {
+      color: var(--accent-cyan);
+      font-size: 1.75rem;
+    }
+
+    .section-subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 600px;
+      margin-bottom: 3rem;
+    }
+
+    .badge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 50px;
+      font-family: var(--font-code);
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      color: var(--accent-cyan);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.85rem 1.75rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all var(--transition-fast);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), #00a8ff);
+      color: #040810;
+      box-shadow: 0 4px 20px var(--accent-cyan-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(0, 240, 255, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      transform: translateY(-2px);
+    }
+
+    .btn-icon {
+      padding: 0.85rem;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      font-size: 1.1rem;
+    }
+
+    .btn-icon:hover {
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+      background: rgba(0, 240, 255, 0.1);
+    }
+
+    /* ==========================================================================
+       HEADER & NAVBAR
+       ========================================================================== */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 1rem 0;
+      transition: background 0.3s, backdrop-filter 0.3s, padding 0.3s;
+    }
+
+    .header.scrolled {
+      background: rgba(8, 11, 17, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.75rem 0;
+    }
+
+    .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-family: var(--font-code);
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: var(--text-main);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .logo span {
+      color: var(--accent-cyan);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: color var(--transition-fast);
+      position: relative;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      color: var(--accent-cyan);
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent-cyan);
+      transition: width var(--transition-fast);
+    }
+
+    .nav-link:hover::after, .nav-link.active::after {
+      width: 100%;
+    }
+
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-code);
+      font-size: 0.75rem;
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      color: var(--accent-green);
+      padding: 0.3rem 0.75rem;
+      border-radius: 50px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    /* ==========================================================================
+       HERO SECTION WITH CANVAS
+       ========================================================================== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      padding-top: 6rem;
+      overflow: hidden;
+    }
+
+    #hero-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+    }
+
+    .hero-pre-title {
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-title {
+      font-size: clamp(2.75rem, 6vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+
+    .hero-tagline {
+      font-size: clamp(1.15rem, 2.5vw, 1.5rem);
+      color: var(--accent-cyan);
+      font-family: var(--font-code);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .hero-bio {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin-bottom: 2.25rem;
+      max-width: 650px;
+      line-height: 1.7;
+    }
+
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .stat-card {
+      padding: 1.25rem;
+      border-left: 3px solid var(--accent-cyan);
+    }
+
+    .stat-number {
+      font-family: var(--font-code);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ==========================================================================
+       ABOUT SECTION & INTERACTIVE TERMINAL
+       ========================================================================== */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 2.5rem;
+      align-items: center;
+    }
+
+    .about-text-content p {
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      font-size: 1.05rem;
+    }
+
+    .about-highlights {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .highlight-box {
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .highlight-box h4 {
+      color: var(--accent-cyan);
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .highlight-box p {
+      font-size: 0.85rem;
+      margin-bottom: 0;
+      color: var(--text-muted);
+    }
+
+    /* Retro Cyber Terminal */
+    .terminal-window {
+      background: #090c14;
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      font-family: var(--font-code);
+      font-size: 0.85rem;
+    }
+
+    .terminal-header {
+      background: #111625;
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+
+    .terminal-title {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+    }
+
+    .terminal-body {
+      padding: 1.25rem;
+      min-height: 280px;
+      max-height: 360px;
+      overflow-y: auto;
+      color: #cbd5e1;
+    }
+
+    .terminal-line {
+      margin-bottom: 0.6rem;
+      word-break: break-word;
+    }
+
+    .prompt-symbol {
+      color: var(--accent-cyan);
+      margin-right: 0.5rem;
+    }
+
+    .command-output {
+      color: #94a3b8;
+      margin-top: 0.2rem;
+      margin-bottom: 0.75rem;
+      padding-left: 1.2rem;
+    }
+
+    .terminal-input-line {
+      display: flex;
+      align-items: center;
+    }
+
+    .terminal-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-family: var(--font-code);
+      font-size: 0.85rem;
+      width: 100%;
+    }
+
+    .terminal-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 0.75rem 1.25rem;
+      background: #0d121f;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .preset-cmd {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--accent-cyan);
+      font-family: var(--font-code);
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .preset-cmd:hover {
+      background: rgba(0, 240, 255, 0.15);
+    }
+
+    /* ==========================================================================
+       SKILLS SECTION
+       ========================================================================== */
+    .skills-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 0.5rem 1.25rem;
+      border-radius: 50px;
+      font-family: var(--font-heading);
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .skill-card {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .skill-header {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .skill-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-cyan);
+      font-size: 1.25rem;
+    }
+
+    .skill-name {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .skill-category {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: var(--font-code);
+    }
+
+    .skill-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 0.25rem;
+    }
+
+    .skill-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-violet), var(--accent-cyan));
+      border-radius: 10px;
+      width: 0%;
+      transition: width 1s ease-out;
+    }
+
+    /* ==========================================================================
+       PROJECTS SECTION
+       ========================================================================== */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 2rem;
+    }
+
+    .project-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    .project-body {
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    .project-tag {
+      font-family: var(--font-code);
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .project-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      line-height: 1.3;
+    }
+
+    .project-description {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+      flex-grow: 1;
+      line-height: 1.6;
+    }
+
+    .project-metrics {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      padding: 0.6rem 0.85rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      font-family: var(--font-code);
+      font-size: 0.78rem;
+    }
+
+    .metric-item span {
+      color: var(--text-dim);
+    }
+
+    .metric-item strong {
+      color: var(--accent-green);
+    }
+
+    .project-tech {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tech-pill {
+      font-size: 0.75rem;
+      font-family: var(--font-code);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .project-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-subtle);
+      margin-top: auto;
+    }
+
+    .project-links {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .project-link-btn {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      transition: color 0.2s;
+    }
+
+    .project-link-btn:hover {
+      color: var(--accent-cyan);
+    }
+
+    /* ==========================================================================
+       EDUCATION & COURSES SECTION
+       ========================================================================== */
+    .education-timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+
+    .education-timeline::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--accent-cyan), var(--accent-violet));
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2.5rem;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -2rem;
+      top: 0.25rem;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--bg-dark);
+      border: 3px solid var(--accent-cyan);
+      box-shadow: 0 0 10px var(--accent-cyan-glow);
+    }
+
+    .timeline-card {
+      padding: 1.75rem;
+    }
+
+    .timeline-degree {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .timeline-institution {
+      color: var(--accent-cyan);
+      font-family: var(--font-code);
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .timeline-date {
+      display: inline-block;
+      font-family: var(--font-code);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.25rem 0.65rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .coursework-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    /* ==========================================================================
+       CONTACT SECTION
+       ========================================================================== */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 3rem;
+    }
+
+    .contact-info-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .contact-card {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .contact-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-cyan);
+      font-size: 1.35rem;
+    }
+
+    .contact-card-text label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-family: var(--font-code);
+      margin-bottom: 0.2rem;
+    }
+
+    .contact-card-text span {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .contact-form-container {
+      padding: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-family: var(--font-code);
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px var(--accent-cyan-glow);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 130px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--accent-cyan);
+      color: var(--text-main);
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transform: translateY(150%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+    }
+
+    .toast i {
+      color: var(--accent-green);
+      font-size: 1.25rem;
+    }
+
+    /* ==========================================================================
+       MODAL POPUP
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(4, 7, 13, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 3000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-lg);
+      max-width: 680px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 2.25rem;
+      position: relative;
+      transform: scale(0.95);
+      transition: transform 0.3s;
+    }
+
+    .modal-backdrop.active .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+
+    .modal-close:hover {
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    /* ==========================================================================
+       FOOTER
+       ========================================================================== */
+    .footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 3rem 0 2rem 0;
+      background: #05070c;
+    }
+
+    .footer-content {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 1.5rem;
+      font-family: var(--font-code);
+    }
+
+    /* Responsive Breakdown */
+    @media (max-width: 992px) {
+      .about-grid, .contact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-subtle);
+        flex-direction: column;
+        padding: 1.5rem;
+        gap: 1.25rem;
+      }
+
+      .nav-links.mobile-open {
+        display: flex;
+      }
+
+      .mobile-menu-btn {
+        display: block;
+      }
+
+      .hero {
+        padding-top: 8rem;
+        min-height: auto;
+        padding-bottom: 4rem;
+      }
+
+      .projects-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================= -->
+  <!-- HEADER & NAVIGATION -->
+  <!-- ========================================================================= -->
+  <header class="header" id="navbar">
+    <div class="container nav-container">
+      <a href="#hero" class="logo">
+        <i class="fa-solid fa-brain"></i> JP<span>.ai</span>
+      </a>
+
+      <div class="nav-status">
+        <div class="status-dot"></div>
+        <span>Open for AI Opportunities</span>
+      </div>
+
+      <nav>
+        <ul class="nav-links" id="nav-links">
+          <li><a href="#about" class="nav-link">About</a></li>
+          <li><a href="#skills" class="nav-link">Skills</a></li>
+          <li><a href="#projects" class="nav-link">Projects</a></li>
+          <li><a href="#education" class="nav-link">Education</a></li>
+          <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <button class="mobile-menu-btn" id="menu-toggle" aria-label="Toggle Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- HERO SECTION WITH INTERACTIVE NEURAL CANVAS -->
+  <!-- ========================================================================= -->
+  <section class="hero" id="hero">
+    <canvas id="hero-canvas"></canvas>
+
+    <div class="container hero-content">
+      <div class="hero-pre-title">
+        <span class="badge-tag">
+          <i class="fa-solid fa-graduation-cap"></i> B.Tech AI & ML Student
+        </span>
+      </div>
+
+      <!-- EDIT USER NAME HERE -->
+      <h1 class="hero-title">
+        Hi, I'm <span class="gradient-text">Janendra Patel</span>
+      </h1>
+
+      <!-- EDIT TAGLINE HERE -->
+      <div class="hero-tagline">
+        <i class="fa-solid fa-code-branch"></i>
+        <span id="typing-tagline">AI/ML Engineer in Training</span>
+      </div>
+
+      <!-- EDIT INTRO SUMMARY HERE -->
+      <p class="hero-bio">
+        Pursuing B.Tech in Artificial Intelligence & Machine Learning at <strong>P P Savani University</strong>. 
+        Passionate about designing intelligent neural network architectures, predictive machine learning models, and computer vision pipelines.
+      </p>
+
+      <div class="hero-cta">
+        <a href="#projects" class="btn btn-primary">
+          <i class="fa-solid fa-rocket"></i> Explore Projects
+        </a>
+        
+        <!-- EDIT YOUR SOCIAL LINKS HERE -->
+        <a href="https://github.com/pateljaned1-max" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" aria-label="GitHub Profile">
+          <i class="fa-brands fa-github"></i> GitHub
+        </a>
+
+        <a href="https://www.linkedin.com/in/janend-patel-2b93873a1" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" aria-label="LinkedIn Profile">
+          <i class="fa-brands fa-linkedin"></i> LinkedIn
+        </a>
+
+        <a href="#contact" class="btn btn-icon" aria-label="Send Email">
+          <i class="fa-solid fa-envelope"></i>
+        </a>
+      </div>
+
+      <!-- HERO STATS CARDS -->
+      <div class="hero-stats">
+        <div class="glass-card stat-card">
+          <div class="stat-number">B.Tech</div>
+          <div class="stat-label">AI & ML Candidate</div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-number">3+</div>
+          <div class="stat-label">AI/ML Projects</div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Problem Solver</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- ABOUT SECTION & INTERACTIVE TERMINAL -->
+  <!-- ========================================================================= -->
+  <section id="about">
+    <div class="container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-terminal"></i> About Me
+      </h2>
+      <p class="section-subtitle">
+        Building intelligent systems with a strong foundation in deep learning theory and practical software engineering.
+      </p>
+
+      <div class="about-grid">
+        <!-- Bio Text -->
+        <div class="about-text-content">
+          <p>
+            I am an aspiring AI & ML Engineer currently completing my <strong>B.Tech in Artificial Intelligence & Machine Learning</strong> at <strong>P P Savani University</strong>.
+          </p>
+          <p>
+            My core interest lies at the intersection of data-driven intelligence and robust software architecture. Whether it's training convolutional models for computer vision, fine-tuning NLP transformer models, or writing algorithmic pipelines in Python, I enjoy solving complex problems through code.
+          </p>
+          <p>
+            I am actively seeking internship opportunities, research collaborations, and open-source contributions to apply and elevate my technical skill set.
+          </p>
+
+          <div class="about-highlights">
+            <div class="highlight-box">
+              <h4><i class="fa-solid fa-network-wired"></i> Deep Learning</h4>
+              <p>PyTorch, Neural Nets, Model Optimization</p>
+            </div>
+            <div class="highlight-box">
+              <h4><i class="fa-solid fa-eye"></i> Computer Vision</h4>
+              <p>OpenCV, Object Detection, Image Classification</p>
+            </div>
+            <div class="highlight-box">
+              <h4><i class="fa-solid fa-language"></i> NLP Systems</h4>
+              <p>Transformers, Scikit-Learn, Text Mining</p>
+            </div>
+            <div class="highlight-box">
+              <h4><i class="fa-solid fa-database"></i> Data & SQL</h4>
+              <p>Pandas, NumPy, Relational Databases</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Cyber Terminal -->
+        <div class="terminal-window">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="terminal-title">janendra@ai-station:~</div>
+          </div>
+
+          <div class="terminal-body" id="terminal-body">
+            <div class="terminal-line">
+              <span class="prompt-symbol">➜</span> Welcome to Janendra's Cyber Terminal v1.0. Type <span style="color: var(--accent-cyan);">help</span> to explore.
+            </div>
+          </div>
+
+          <div class="terminal-presets">
+            <button class="preset-cmd" onclick="executeCommand('help')">help</button>
+            <button class="preset-cmd" onclick="executeCommand('about')">about</button>
+            <button class="preset-cmd" onclick="executeCommand('education')">education</button>
+            <button class="preset-cmd" onclick="executeCommand('skills')">skills</button>
+            <button class="preset-cmd" onclick="executeCommand('contact')">contact</button>
+            <button class="preset-cmd" onclick="executeCommand('clear')">clear</button>
+          </div>
+
+          <div class="terminal-body" style="padding-top: 0; min-height: auto; max-height: none;">
+            <div class="terminal-input-line">
+              <span class="prompt-symbol">➜</span>
+              <input type="text" class="terminal-input" id="terminal-input" placeholder="Type command..." autocomplete="off" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- SKILLS SECTION (EDITABLE PLACEHOLDERS) -->
+  <!-- ========================================================================= -->
+  <section id="skills" style="background: rgba(255, 255, 255, 0.01);">
+    <div class="container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-microchip"></i> Skills & Capabilities
+      </h2>
+      <p class="section-subtitle">
+        Technologies, frameworks, and technical toolkits I work with daily.
+      </p>
+
+      <!-- Category Filters -->
+      <div class="skills-filter">
+        <button class="filter-btn active" data-filter="all">All Skills</button>
+        <button class="filter-btn" data-filter="ml">ML & Deep Learning</button>
+        <button class="filter-btn" data-filter="languages">Languages</button>
+        <button class="filter-btn" data-filter="data">Data & Databases</button>
+        <button class="filter-btn" data-filter="tools">Tools & DevOps</button>
+      </div>
+
+      <!-- ==================== PLACEHOLDER: EDIT SKILLS HERE ==================== -->
+      <div class="skills-grid" id="skills-container">
+        
+        <!-- Skill Item 1 -->
+        <div class="glass-card skill-card" data-category="languages">
+          <div class="skill-header">
+            <div class="skill-icon"><i class="fa-brands fa-python"></i></div>
+            <div>
+              <div class="skill-name">Python</div>
+              <div class="skill-category">Core Language / Data Science</div>
+            </div>
+          </div>
+          <div class="skill-bar-container">
+            <div class="skill-bar-fill" style="width: 90%;"></div>
+          </div>
+        </div>
+
+        <!-- Skill Item 2 -->
+        <div class="glass-card skill-card" data-category="ml">
+          <div class="skill-header">
+            <div class="skill-icon"><i class="fa-solid fa-fire"></i></div>
+            <div>
+              <div class="skill-name">PyTorch / TensorFlow</div>
+              <div class="skill-category">Deep Learning Frameworks</div>
+            </div>
+          </div>
+          <div class="skill-bar-container">
+            <div class="skill-bar-fill" style="width: 82%;"></div>
+          </div>
+        </div>
+
+        <!-- Skill Item 3 -->
+        <div class="glass-card skill-card" data-category="ml">
+          <div class="skill-header">
+            <div class="skill-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <div>
+              <div class="skill-name">Scikit-Learn</div>
+              <div class="skill-category">Machine Learning Algorithms</div>
+            </div>
+          </div>
+          <div class="skill-bar-container">
+            <div class="skill-bar-fill" style="width: 88%;"></div>
+          </div>
+        </div>
+
+        <!-- Skill Item 4 -->
+        <div class="glass-card skill-card" data-category="data">
+          <div class="skill-header">
+            <div class="skill-icon"><i class="fa-solid fa-table"></i></div>
+            <div>
+              <div class="skill-name">Pandas & NumPy</div>
+              <div class="skill-category">Data Manipulation & Analytics</div>
+            </div>
+          </div>
+          <div class="skill-bar-container">
+            <div class="skill-bar-fill" style="width: 85%;"></div>
+          </div>
+        </div>
+
+        <!-- Skill Item 5 -->
+        <div class="glass-card skill-card" data-category="data">
+          <div class="skill-header">
+            <div class="skill-icon"><i class="fa-solid fa-database"></i></div>
+            <div>
+              <div class="skill-name">SQL / Relational DBs</div>
+              <div class="skill-category">Database Management</div>
+            </div>
+          </div>
+          <div class="skill-bar-container">
+            <div class="skill-bar-fill" style="width: 78%;"></div>
+          </div>
+        </div>
+
+        <!-- Skill Item 6 -->
+        <div class="glass-card skill-card" data-category="languages">
+          <div class="skill-header">
+            <div class="skill-icon"><i class="fa-brands fa-java"></i></div>
+            <div>
+              <div class="skill-name">Java</div>
+              <div class="skill-category">Object-Oriented Programming</div>
+            </div>
+          </div>
+          <div class="skill-bar-container">
+            <div class="skill-bar-fill" style="width: 75%;"></div>
+          </div>
+        </div>
+
+        <!-- Skill Item 7 -->
+        <div class="glass-card skill-card" data-category="tools">
+          <div class="skill-header">
+            <div class="skill-icon"><i class="fa-brands fa-git-alt"></i></div>
+            <div>
+              <div class="skill-name">Git & GitHub</div>
+              <div class="skill-category">Version Control & CI/CD</div>
+            </div>
+          </div>
+          <div class="skill-bar-container">
+            <div class="skill-bar-fill" style="width: 85%;"></div>
+          </div>
+        </div>
+
+        <!-- Skill Item 8 -->
+        <div class="glass-card skill-card" data-category="ml">
+          <div class="skill-header">
+            <div class="skill-icon"><i class="fa-solid fa-camera"></i></div>
+            <div>
+              <div class="skill-name">OpenCV</div>
+              <div class="skill-category">Computer Vision & Image Processing</div>
+            </div>
+          </div>
+          <div class="skill-bar-container">
+            <div class="skill-bar-fill" style="width: 80%;"></div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ==================== END PLACEHOLDER SKILLS ==================== -->
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PROJECTS SECTION (EDITABLE PLACEHOLDERS) -->
+  <!-- ========================================================================= -->
+  <section id="projects">
+    <div class="container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-diagram-project"></i> Featured Projects
+      </h2>
+      <p class="section-subtitle">
+        Selected artificial intelligence and machine learning implementations. (Easily customizable cards)
+      </p>
+
+      <!-- ==================== PLACEHOLDER: EDIT PROJECTS HERE ==================== -->
+      <div class="projects-grid">
+
+        <!-- PROJECT CARD 1 -->
+        <div class="glass-card project-card">
+          <div class="project-body">
+            <div class="project-tag">Computer Vision / Deep Learning</div>
+            <h3 class="project-title">Neural Vision Defect Detector</h3>
+            <p class="project-description">
+              A high-precision image classification pipeline built to inspect surface defects in manufacturing components using PyTorch and Convolutional Neural Networks (CNNs).
+            </p>
+            
+            <div class="project-metrics">
+              <div class="metric-item"><span>Accuracy:</span> <strong>98.4%</strong></div>
+              <div class="metric-item"><span>Inference:</span> <strong>14ms</strong></div>
+            </div>
+
+            <div class="project-tech">
+              <span class="tech-pill">Python</span>
+              <span class="tech-pill">PyTorch</span>
+              <span class="tech-pill">OpenCV</span>
+              <span class="tech-pill">CNN</span>
+            </div>
+
+            <div class="project-footer">
+              <button class="btn btn-secondary" onclick="openProjectModal('project1')">
+                <i class="fa-solid fa-circle-info"></i> Details
+              </button>
+              <div class="project-links">
+                <!-- Replace '#' with your GitHub project link -->
+                <a href="https://github.com/pateljaned1-max" target="_blank" class="project-link-btn" title="View Source Code">
+                  <i class="fa-brands fa-github"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROJECT CARD 2 -->
+        <div class="glass-card project-card">
+          <div class="project-body">
+            <div class="project-tag">NLP & Machine Learning</div>
+            <h3 class="project-title">CareerAI - Smart Resume Matcher</h3>
+            <p class="project-description">
+              An intelligent resume-job parsing application using Natural Language Processing (TF-IDF & BERT embeddings) to rank candidate suitability against custom job descriptions.
+            </p>
+            
+            <div class="project-metrics">
+              <div class="metric-item"><span>F1-Score:</span> <strong>0.91</strong></div>
+              <div class="metric-item"><span>Parser:</span> <strong>FastAPI</strong></div>
+            </div>
+
+            <div class="project-tech">
+              <span class="tech-pill">Python</span>
+              <span class="tech-pill">Scikit-Learn</span>
+              <span class="tech-pill">NLP</span>
+              <span class="tech-pill">FastAPI</span>
+            </div>
+
+            <div class="project-footer">
+              <button class="btn btn-secondary" onclick="openProjectModal('project2')">
+                <i class="fa-solid fa-circle-info"></i> Details
+              </button>
+              <div class="project-links">
+                <!-- Replace '#' with your GitHub project link -->
+                <a href="https://github.com/pateljaned1-max" target="_blank" class="project-link-btn" title="View Source Code">
+                  <i class="fa-brands fa-github"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROJECT CARD 3 -->
+        <div class="glass-card project-card">
+          <div class="project-body">
+            <div class="project-tag">Reinforcement Learning / Robotics</div>
+            <h3 class="project-title">Autonomous Grid Navigation Bot</h3>
+            <p class="project-description">
+              Q-learning reinforcement learning agent trained to navigate complex obstacle grids with dynamic path planning and minimal energy consumption.
+            </p>
+            
+            <div class="project-metrics">
+              <div class="metric-item"><span>Reward Rate:</span> <strong>+94%</strong></div>
+              <div class="metric-item"><span>Algorithm:</span> <strong>DQN</strong></div>
+            </div>
+
+            <div class="project-tech">
+              <span class="tech-pill">Python</span>
+              <span class="tech-pill">Gymnasium</span>
+              <span class="tech-pill">PyTorch</span>
+              <span class="tech-pill">Matplotlib</span>
+            </div>
+
+            <div class="project-footer">
+              <button class="btn btn-secondary" onclick="openProjectModal('project3')">
+                <i class="fa-solid fa-circle-info"></i> Details
+              </button>
+              <div class="project-links">
+                <!-- Replace '#' with your GitHub project link -->
+                <a href="https://github.com/pateljaned1-max" target="_blank" class="project-link-btn" title="View Source Code">
+                  <i class="fa-brands fa-github"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ==================== END PLACEHOLDER PROJECTS ==================== -->
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- EDUCATION & ACADEMICS -->
+  <!-- ========================================================================= -->
+  <section id="education" style="background: rgba(255, 255, 255, 0.01);">
+    <div class="container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-user-graduate"></i> Academic Journey
+      </h2>
+      <p class="section-subtitle">
+        Educational background and specialized coursework in Artificial Intelligence.
+      </p>
+
+      <div class="education-timeline">
+        <div class="timeline-item">
+          <div class="glass-card timeline-card">
+            <h3 class="timeline-degree">Bachelor of Technology (B.Tech) in AI & ML</h3>
+            <div class="timeline-institution">P P Savani University</div>
+            <div class="timeline-date"><i class="fa-regular fa-calendar"></i> Currently Pursuing</div>
+
+            <p style="color: var(--text-muted); font-size: 0.95rem;">
+              Specializing in core artificial intelligence principles, neural networks, machine learning algorithms, computer vision, data structures, and software engineering practice.
+            </p>
+
+            <div style="margin-top: 1.25rem;">
+              <span style="font-family: var(--font-code); font-size: 0.8rem; color: var(--accent-cyan);">Key Coursework:</span>
+              <div class="coursework-tags">
+                <span class="tech-pill">Deep Learning</span>
+                <span class="tech-pill">Machine Learning</span>
+                <span class="tech-pill">Natural Language Processing</span>
+                <span class="tech-pill">Computer Vision</span>
+                <span class="tech-pill">Data Structures & Algorithms</span>
+                <span class="tech-pill">Linear Algebra & Probability</span>
+                <span class="tech-pill">Database Systems</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- CONTACT SECTION -->
+  <!-- ========================================================================= -->
+  <section id="contact">
+    <div class="container">
+      <h2 class="section-title">
+        <i class="fa-solid fa-paper-plane"></i> Get In Touch
+      </h2>
+      <p class="section-subtitle">
+        Have a project idea, internship opportunity, or technical question? Feel free to reach out!
+      </p>
+
+      <div class="contact-grid">
+        <div class="contact-info-cards">
+          
+          <!-- LINKEDIN LINK -->
+          <a href="https://www.linkedin.com/in/janend-patel-2b93873a1" target="_blank" rel="noopener noreferrer" class="glass-card contact-card">
+            <div class="contact-icon"><i class="fa-brands fa-linkedin"></i></div>
+            <div class="contact-card-text">
+              <label>LinkedIn Profile</label>
+              <span>janend-patel-2b93873a1</span>
+            </div>
+          </a>
+
+          <!-- GITHUB LINK -->
+          <a href="https://github.com/pateljaned1-max" target="_blank" rel="noopener noreferrer" class="glass-card contact-card">
+            <div class="contact-icon"><i class="fa-brands fa-github"></i></div>
+            <div class="contact-card-text">
+              <label>GitHub Profile</label>
+              <span>pateljaned1-max</span>
+            </div>
+          </a>
+
+          <!-- EMAIL PLACEHOLDER -->
+          <div class="glass-card contact-card" style="cursor: pointer;" onclick="copyEmail()">
+            <div class="contact-icon"><i class="fa-solid fa-envelope"></i></div>
+            <div class="contact-card-text">
+              <label>Email Address (Click to Copy)</label>
+              <span id="email-text">janendra.patel@example.com</span>
+            </div>
+          </div>
+
+          <div class="glass-card contact-card">
+            <div class="contact-icon"><i class="fa-solid fa-location-dot"></i></div>
+            <div class="contact-card-text">
+              <label>Institution</label>
+              <span>P P Savani University, Gujarat, India</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Contact Form -->
+        <div class="glass-card contact-form-container">
+          <form id="contact-form" onsubmit="handleFormSubmit(event)">
+            <div class="form-group">
+              <label class="form-label" for="user_name">YOUR NAME</label>
+              <input type="text" id="user_name" class="form-input" placeholder="e.g. Alex Turing" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="user_email">YOUR EMAIL</label>
+              <input type="email" id="user_email" class="form-input" placeholder="e.g. alex@example.com" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="user_message">MESSAGE</label>
+              <textarea id="user_message" class="form-textarea" placeholder="Write your message or inquiry here..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+              <i class="fa-solid fa-paper-plane"></i> Send Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PROJECT DETAIL MODAL -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" id="project-modal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeProjectModal()" aria-label="Close modal">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div id="modal-content">
+        <!-- Dynamic Content injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toast-message">Message sent successfully!</span>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER -->
+  <!-- ========================================================================= -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <a href="#hero" class="logo">
+          <i class="fa-solid fa-brain"></i> JP<span>.ai</span>
+        </a>
+
+        <div style="font-family: var(--font-code); font-size: 0.85rem; color: var(--text-muted);">
+          Janendra Patel • B.Tech AI & ML Candidate @ P P Savani University
+        </div>
+
+        <div>
+          <a href="#hero" class="btn btn-icon" title="Scroll to Top">
+            <i class="fa-solid fa-arrow-up"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        &copy; <span id="year"></span> Janendra Patel. Engineered with HTML5, CSS3, & Canvas API.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC & CANVAS ANIMATION -->
+  <!-- ========================================================================= -->
+  <script>
+    // --- Set Current Year ---
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // --- Mobile Navigation Toggle ---
+    const menuToggle = document.getElementById('menu-toggle');
+    const navLinks = document.getElementById('nav-links');
+
+    menuToggle.addEventListener('click', () => {
+      navLinks.classList.toggle('mobile-open');
+    });
+
+    // Close mobile nav on click link
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('mobile-open');
+      });
+    });
+
+    // --- Sticky Header Effect ---
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 40) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    });
+
+    // --- Skills Filter Functionality ---
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const skillCards = document.querySelectorAll('.skill-card');
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const filter = btn.getAttribute('data-filter');
+
+        skillCards.forEach(card => {
+          if (filter === 'all' || card.getAttribute('data-category') === filter) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // --- Interactive Terminal Logic ---
+    const terminalBody = document.getElementById('terminal-body');
+    const terminalInput = document.getElementById('terminal-input');
+
+    const terminalCommands = {
+      help: 'Available commands: <span style="color: var(--accent-cyan);">about, education, skills, projects, contact, clear</span>',
+      about: 'Janendra Patel - B.Tech AI & ML Student at P P Savani University. Focused on Neural Networks, Computer Vision, and Predictive ML models.',
+      education: 'B.Tech in Artificial Intelligence & Machine Learning at P P Savani University.',
+      skills: 'Python, PyTorch, TensorFlow, Scikit-Learn, OpenCV, Pandas, SQL, Java, Git.',
+      projects: '1. Neural Vision Defect Detector | 2. CareerAI Smart Resume Matcher | 3. Autonomous Grid Bot',
+      contact: 'LinkedIn: linkedin.com/in/janend-patel-2b93873a1 | GitHub: github.com/pateljaned1-max',
+      clear: ''
+    };
+
+    function executeCommand(cmd) {
+      cmd = cmd.trim().toLowerCase();
+      
+      if (cmd === 'clear') {
+        terminalBody.innerHTML = `
+          <div class="terminal-line">
+            <span class="prompt-symbol">➜</span> Terminal cleared. Type <span style="color: var(--accent-cyan);">help</span> for options.
+          </div>
+        `;
+        return;
+      }
+
+      // Add user command line
+      const userLine = document.createElement('div');
+      userLine.className = 'terminal-line';
+      userLine.innerHTML = `<span class="prompt-symbol">➜</span> ${cmd}`;
+      terminalBody.appendChild(userLine);
+
+      // Output response
+      const outputLine = document.createElement('div');
+      outputLine.className = 'command-output';
+
+      if (terminalCommands[cmd]) {
+        outputLine.innerHTML = terminalCommands[cmd];
+      } else {
+        outputLine.innerHTML = `Command not recognized: '<span style="color: #ff5f56;">${cmd}</span>'. Type <span style="color: var(--accent-cyan);">help</span> for available commands.`;
+      }
+
+      terminalBody.appendChild(outputLine);
+      terminalBody.scrollTop = terminalBody.scrollHeight;
+    }
+
+    terminalInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = terminalInput.value;
+        if (val) {
+          executeCommand(val);
+          terminalInput.value = '';
+        }
+      }
+    });
+
+    // --- Modal Logic ---
+    const projectModal = document.getElementById('project-modal');
+    const modalContent = document.getElementById('modal-content');
+
+    const projectData = {
+      project1: {
+        title: "Neural Vision Defect Detector",
+        category: "Computer Vision / Deep Learning",
+        description: "A comprehensive deep learning framework built with PyTorch and OpenCV. It automates surface defect detection on manufacturing components by leveraging a custom ResNet architecture trained on 15,000+ labeled industrial images.",
+        features: [
+          "98.4% Classification accuracy on test sets",
+          "Real-time processing pipeline (14ms inference latency per frame)",
+          "Automated visual bounding boxes around detected cracks or anomalies",
+          "Exportable ONNX runtime weights for edge deployment"
+        ],
+        github: "https://github.com/pateljaned1-max"
+      },
+      project2: {
+        title: "CareerAI - Smart Resume Matcher",
+        category: "NLP & Machine Learning",
+        description: "An AI-powered job matching system that evaluates candidate resumes against detailed job descriptions. Utilizes TF-IDF vectorization and sentence-transformer embeddings to produce semantic match scores.",
+        features: [
+          "Parses PDF and DOCX resume formats",
+          "Extracts core technical skills, experience years, and missing keywords",
+          "FastAPI RESTful endpoint backend",
+          "Interactive match visualization dashboard"
+        ],
+        github: "https://github.com/pateljaned1-max"
+      },
+      project3: {
+        title: "Autonomous Grid Navigation Bot",
+        category: "Reinforcement Learning",
+        description: "A Deep Q-Network (DQN) implementation training an autonomous agent to navigate dynamic grid environments while avoiding moving obstacles and maximizing rewards.",
+        features: [
+          "Custom Gymnasium environment with customizable grid sizes",
+          "Experience replay buffer and target network stabilization",
+          "Real-time trajectory plotting using Matplotlib",
+          "Achieved +94% goal completion rate over 1,000 test episodes"
+        ],
+        github: "https://github.com/pateljaned1-max"
+      }
+    };
+
+    function openProjectModal(id) {
+      const data = projectData[id];
+      if (!data) return;
+
+      modalContent.innerHTML = `
+        <div style="font-family: var(--font-code); font-size: 0.8rem; color: var(--accent-cyan); margin-bottom: 0.4rem;">
+          ${data.category}
+        </div>
+        <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">
+          ${data.title}
+        </h2>
+        <p style="color: var(--text-muted); font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem;">
+          ${data.description}
+        </p>
+        <h4 style="font-size: 1.05rem; margin-bottom: 0.75rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fa-solid fa-list-check"></i> Key Features
+        </h4>
+        <ul style="list-style-type: none; margin-bottom: 2rem; color: var(--text-muted);">
+          ${data.features.map(f => `<li style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-chevron-right" style="color: var(--accent-cyan); font-size: 0.75rem;"></i> ${f}</li>`).join('')}
+        </ul>
+        <div style="display: flex; gap: 1rem;">
+          <a href="${data.github}" target="_blank" class="btn btn-primary">
+            <i class="fa-brands fa-github"></i> View GitHub Repo
+          </a>
+          <button class="btn btn-secondary" onclick="closeProjectModal()">Close</button>
+        </div>
+      `;
+
+      projectModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeProjectModal() {
+      projectModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+
+    function closeModalOnBackdrop(e) {
+      if (e.target === projectModal) {
+        closeProjectModal();
+      }
+    }
+
+    // --- Copy Email Toast ---
+    function copyEmail() {
+      const email = document.getElementById('email-text').textContent;
+      navigator.clipboard.writeText(email).then(() => {
+        showToast('Email address copied to clipboard!');
+      }).catch(() => {
+        showToast('Email: ' + email);
+      });
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      showToast('Thank you! Your message has been received.');
+      document.getElementById('contact-form').reset();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+
+    // =========================================================================
+    // INTERACTIVE NEURAL NETWORK CANVAS ANIMATION
+    // =========================================================================
+    const canvas = document.getElementById('hero-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let particles = [];
+    let mouse = { x: null, y: null, radius: 150 };
+
+    function resizeCanvas() {
+      width = canvas.width = canvas.parentElement.offsetWidth;
+      height = canvas.height = canvas.parentElement.offsetHeight;
+      initParticles();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    window.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
+
+    window.addEventListener('mouseleave', () => {
+      mouse.x = null;
+      mouse.y = null;
+    });
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 1.2;
+        this.vy = (Math.random() - 0.5) * 1.2;
+        this.radius = Math.random() * 2.2 + 1.5;
+        this.color = Math.random() > 0.4 ? '#00f0ff' : '#7000ff';
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0 || this.x > width) this.vx *= -1;
+        if (this.y < 0 || this.y > height) this.vy *= -1;
+
+        // Mouse interaction
+        if (mouse.x != null && mouse.y != null) {
+          let dx = mouse.x - this.x;
+          let dy = mouse.y - this.y;
+          let dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < mouse.radius) {
+            let force = (mouse.radius - dist) / mouse.radius;
+            this.x -= (dx / dist) * force * 3;
+            this.y -= (dy / dist) * force * 3;
+          }
+        }
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function initParticles() {
+      particles = [];
+      const particleCount = Math.floor((width * height) / 12000);
+      for (let i = 0; i < Math.min(particleCount, 85); i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animateParticles() {
+      // Check reduced motion preference
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        ctx.clearRect(0, 0, width, height);
+        return;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Draw synapse connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          let dx = particles[i].x - particles[j].x;
+          let dy = particles[i].y - particles[j].y;
+          let dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 140) {
+            let opacity = 1 - (dist / 140);
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(0, 240, 255, ${opacity * 0.25})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      requestAnimationFrame(animateParticles);
+    }
+
+    // Initial launch
+    resizeCanvas();
+    animateParticles();
+  </script>
+</body>
+</html>
