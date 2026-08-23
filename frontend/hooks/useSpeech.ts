@@ -1,82 +1,141 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
 
-export function useSpeech(onResult: (text: string) => void) {
-  const [isListening, setIsListening] = useState(false);
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+interface SpeechRecognitionOptions {
+  onFinalResult?: (transcript: string) => void;
+  silenceTimeoutMs?: number; // Shanti hone ke baad wait time
+  language?: string;
+}
+
+export function useSpeechRecognition({
+  onFinalResult,
+  silenceTimeoutMs = 2000, // 2 seconds silence ke baad submit
+  language = 'en-IN',
+}: SpeechRecognitionOptions = {}) {
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [transcript, setTranscript] = useState<string>('');
+  const [interimTranscript, setInterimTranscript] = useState<string>('');
+  const [isSupported, setIsSupported] = useState<boolean>(true);
+
   const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const finalTranscriptRef = useRef<string>('');
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
 
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) return;
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-    };
-
-    recognition.onresult = (event: any) => {
-      const transcript = event?.results?.[0]?.[0]?.transcript;
-      if (transcript && transcript.trim().length > 0) {
-        onResult(transcript);
-      }
-      setIsListening(false);
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error === 'no-speech' || event.error === 'network' || event.error === 'aborted') {
-        setIsListening(false);
+      if (!SpeechRecognition) {
+        setIsSupported(false);
         return;
       }
-      setIsListening(false);
-    };
 
-    recognition.onend = () => {
-      setIsListening(false);
-    };
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = language;
+      recognition.maxAlternatives = 1;
 
-    recognitionRef.current = recognition;
-  }, [onResult]);
+      recognition.onresult = (event: any) => {
+        let currentInterim = '';
+        let accumulatedFinal = finalTranscriptRef.current;
 
-  const toggleListening = async () => {
-    if (typeof window === 'undefined') return;
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const item = event.results[i];
+          if (item.isFinal) {
+            accumulatedFinal += (accumulatedFinal ? ' ' : '') + item[0].transcript.trim();
+          } else {
+            currentInterim += item[0].transcript;
+          }
+        }
 
-    // 1. Force mic prompt using standard MediaDevices API
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Stream verify hote hi close karo taaki speech recognition use kar sake
-      stream.getTracks().forEach((track) => track.stop());
-    } catch (err) {
-      alert('Microphone permission block hai ya mic connect nahi hai. Chrome URL bar me lock/tune icon par click karke mic allow karein.');
-      return;
+        finalTranscriptRef.current = accumulatedFinal;
+        setTranscript(accumulatedFinal);
+        setInterimTranscript(currentInterim);
+
+        // Reset silence detection
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+        }
+
+        const totalSpoken = (accumulatedFinal + ' ' + currentInterim).trim();
+
+        if (totalSpoken.length > 0) {
+          silenceTimerRef.current = setTimeout(() => {
+            if (onFinalResult && totalSpoken.length > 0) {
+              onFinalResult(totalSpoken);
+              stopListening();
+            }
+          }, silenceTimeoutMs);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'no-speech') {
+          // Keep alive on silent intervals
+          return;
+        }
+      };
+
+      recognition.onend = () => {
+        // Automatically restart if state is still listening
+        if (recognitionRef.current && isListening) {
+          try {
+            recognition.start();
+          } catch (e) {
+            // Already active
+          }
+        }
+      };
+
+      recognitionRef.current = recognition;
     }
 
-    // 2. Start Speech Recognition
-    if (!recognitionRef.current) return;
-
-    if (isListening) {
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-      setIsListening(false);
-    } else {
-      try {
-        recognitionRef.current.start();
-      } catch {
+    return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-          setTimeout(() => recognitionRef.current?.start(), 150);
-        } catch {}
+        } catch (e) {}
       }
-    }
-  };
+    };
+  }, [language, onFinalResult, silenceTimeoutMs, isListening]);
 
-  return { isListening, toggleListening };
+  const startListening = useCallback(() => {
+    if (!recognitionRef.current) return;
+    setTranscript('');
+    setInterimTranscript('');
+    finalTranscriptRef.current = '';
+
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch (err) {
+      console.warn('Recognition start caught:', err);
+    }
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (!recognitionRef.current) return;
+
+    try {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } catch (err) {
+      console.warn('Recognition stop caught:', err);
+    }
+  }, []);
+
+  return {
+    isListening,
+    transcript: (transcript + ' ' + interimTranscript).trim(),
+    startListening,
+    stopListening,
+    isSupported,
+  };
 }

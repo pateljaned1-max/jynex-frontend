@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Mic, MicOff, PhoneOff, Loader2, Sparkles, Volume2, VolumeX, Send, CheckCircle2 } from 'lucide-react';
@@ -52,32 +53,15 @@ function InterviewContent() {
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [isListening, setIsListening] = useState<boolean>(false);
+  const [liveTranscript, setLiveTranscript] = useState<string>('');
   const [textInput, setTextInput] = useState<string>('');
-  
+
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const finalSpokenTextRef = useRef<string>('');
 
-  const triggerAudioPlayback = async (text: string) => {
-    try {
-      stopAudio();
-      setIsSpeaking(true);
-      const audio = await interviewApi.playQuestionAudio(text);
-      currentAudioRef.current = audio;
-
-      audio.onended = () => setIsSpeaking(false);
-      audio.onerror = () => setIsSpeaking(false);
-    } catch (err) {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        window.speechSynthesis.speak(utterance);
-      } else {
-        setIsSpeaking(false);
-      }
-    }
-  };
-
+  // Audio Playback
   const stopAudio = () => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
@@ -90,56 +74,44 @@ function InterviewContent() {
     setIsSpeaking(false);
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (messages.length === 1 && messages[0].sender === 'ai') {
-        triggerAudioPlayback(messages[0].text);
-      }
-    }, 600);
-
-    return () => {
-      clearTimeout(timer);
+  const triggerAudioPlayback = async (text: string) => {
+    try {
       stopAudio();
-    };
-  }, []);
+      setIsSpeaking(true);
+      const audio = await interviewApi.playQuestionAudio(text);
+      currentAudioRef.current = audio;
 
-  // Web Speech STT Handling
-  const toggleListening = () => {
-    if (isListening) {
-      if (recognitionRef.current) recognitionRef.current.stop();
-      setIsListening(false);
-      return;
+      audio.onended = () => {
+        setIsSpeaking(false);
+        startSpeechListening();
+      };
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        startSpeechListening();
+      };
+    } catch (err) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => {
+          setIsSpeaking(false);
+          startSpeechListening();
+        };
+        utterance.onerror = () => {
+          setIsSpeaking(false);
+          startSpeechListening();
+        };
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setIsSpeaking(false);
+      }
     }
-
-    if (typeof window === 'undefined') return;
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Speech recognition not supported in this browser. Please type your answer.');
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.continuous = false;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setIsListening(false);
-      handleUserAnswer(transcript);
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-
-    recognitionRef.current = recognition;
-    recognition.start();
   };
 
-  // Trigger Final Evaluation
+  // Evaluation & Results
   const handleFinalEvaluation = async (allMessages: LocalMessage[]) => {
     setIsEvaluating(true);
     stopAudio();
+    stopSpeechListening();
 
     const conversationHistory: DialoguePayload[] = allMessages.map((m) => ({
       sender: m.sender === 'user' ? 'candidate' : 'ai',
@@ -164,22 +136,24 @@ function InterviewContent() {
     }
   };
 
-  // Main Flow Logic
+  // Main Answer Processor
   const handleUserAnswer = async (spokenText: string) => {
     if (!spokenText.trim() || isLoading || isEvaluating) return;
 
     stopAudio();
+    stopSpeechListening();
 
     const userMsg: LocalMessage = {
       id: Date.now().toString(),
       sender: 'user',
-      text: spokenText
+      text: spokenText.trim()
     };
 
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setIsLoading(true);
     setTextInput('');
+    setLiveTranscript('');
 
     if (questionCount >= MAX_QUESTIONS) {
       await handleFinalEvaluation(updatedMessages);
@@ -213,6 +187,112 @@ function InterviewContent() {
       setIsLoading(false);
     }
   };
+
+  // Continuous Speech Recognition with Silence Buffer
+  const startSpeechListening = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    stopSpeechListening();
+
+    finalSpokenTextRef.current = '';
+    setLiveTranscript('');
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      let accumulated = finalSpokenTextRef.current;
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const item = event.results[i];
+        if (item.isFinal) {
+          accumulated += (accumulated ? ' ' : '') + item[0].transcript.trim();
+        } else {
+          interim += item[0].transcript;
+        }
+      }
+
+      finalSpokenTextRef.current = accumulated;
+      const totalText = (accumulated + ' ' + interim).trim();
+      setLiveTranscript(totalText);
+
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
+
+      if (totalText.length > 0) {
+        silenceTimerRef.current = setTimeout(() => {
+          stopSpeechListening();
+          handleUserAnswer(totalText);
+        }, 2200);
+      }
+    };
+
+    recognition.onerror = (e: any) => {
+      if (e.error !== 'no-speech') {
+        setIsListening(false);
+      }
+    };
+
+    recognition.onend = () => {
+      // Kept controlled via silence timer
+    };
+
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch (e) {}
+  };
+
+  const stopSpeechListening = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      const textToSubmit = (finalSpokenTextRef.current + ' ' + liveTranscript).trim();
+      stopSpeechListening();
+      if (textToSubmit) {
+        handleUserAnswer(textToSubmit);
+      }
+    } else {
+      stopAudio();
+      startSpeechListening();
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (messages.length === 1 && messages[0].sender === 'ai') {
+        triggerAudioPlayback(messages[0].text);
+      }
+    }, 600);
+
+    return () => {
+      clearTimeout(timer);
+      stopAudio();
+      stopSpeechListening();
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -328,6 +408,19 @@ function InterviewContent() {
               </div>
             </div>
           ))}
+
+          {/* Live Continuous Transcript Bubble */}
+          {isListening && liveTranscript && (
+            <div className="flex justify-end">
+              <div className="max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed border bg-blue-950/40 border-blue-500/30 text-blue-200 rounded-tr-none">
+                <div className="text-[10px] font-bold uppercase tracking-wider mb-1 text-blue-400 animate-pulse">
+                  Listening (Continuous)...
+                </div>
+                <p>{liveTranscript}</p>
+              </div>
+            </div>
+          )}
+
           {(isLoading || isEvaluating) && (
             <div className="flex justify-start">
               <div className="bg-slate-800/50 border border-slate-700/50 p-3 rounded-2xl rounded-tl-none flex items-center gap-2 text-xs text-slate-400">
@@ -344,10 +437,7 @@ function InterviewContent() {
         <form onSubmit={handleSubmit} className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => {
-              stopAudio();
-              toggleListening();
-            }}
+            onClick={toggleListening}
             disabled={isLoading || isEvaluating}
             className={`p-3.5 rounded-2xl font-bold transition shadow-lg shrink-0 ${
               isListening 
@@ -362,7 +452,7 @@ function InterviewContent() {
             type="text"
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
-            placeholder={isEvaluating ? 'Evaluating session...' : 'Type your answer or speak using the mic...'}
+            placeholder={isEvaluating ? 'Evaluating session...' : isListening ? 'Listening to microphone...' : 'Type your answer or speak using the mic...'}
             disabled={isLoading || isEvaluating}
             className="flex-1 bg-slate-900/90 border border-slate-800 rounded-2xl px-5 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
           />
