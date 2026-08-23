@@ -13,7 +13,6 @@ interface LocalMessage {
 
 const MAX_QUESTIONS = 5;
 
-// Visual Audio Frequency Waveform
 function AudioWaveVisualizer({ isActive, colorClass }: { isActive: boolean; colorClass: string }) {
   const delays = ['0ms', '150ms', '300ms', '100ms', '250ms', '350ms', '200ms'];
 
@@ -56,55 +55,51 @@ function InterviewContent() {
   const [liveTranscript, setLiveTranscript] = useState<string>('');
   const [textInput, setTextInput] = useState<string>('');
 
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const finalSpokenTextRef = useRef<string>('');
 
-  // Audio Playback
+  // Robust Native TTS Engine
   const stopAudio = () => {
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current.currentTime = 0;
-      currentAudioRef.current = null;
-    }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
     setIsSpeaking(false);
   };
 
-  const triggerAudioPlayback = async (text: string) => {
-    try {
-      stopAudio();
-      setIsSpeaking(true);
-      const audio = await interviewApi.playQuestionAudio(text);
-      currentAudioRef.current = audio;
+  const triggerAudioPlayback = (text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
-      audio.onended = () => {
-        setIsSpeaking(false);
-        startSpeechListening();
-      };
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        startSpeechListening();
-      };
-    } catch (err) {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onend = () => {
-          setIsSpeaking(false);
-          startSpeechListening();
-        };
-        utterance.onerror = () => {
-          setIsSpeaking(false);
-          startSpeechListening();
-        };
-        window.speechSynthesis.speak(utterance);
-      } else {
-        setIsSpeaking(false);
-      }
-    }
+    // Pehle se pending speech ko clean karein
+    window.speechSynthesis.cancel();
+    stopSpeechListening();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsListening(false);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      // AI bol chuka, ab mic open karein
+      startSpeechListening();
+    };
+
+    utterance.onerror = (e) => {
+      console.warn('TTS error:', e);
+      setIsSpeaking(false);
+      startSpeechListening();
+    };
+
+    // Small delay to ensure synthesis ready state
+    setTimeout(() => {
+      window.speechSynthesis.speak(utterance);
+    }, 150);
   };
 
   // Evaluation & Results
@@ -136,7 +131,7 @@ function InterviewContent() {
     }
   };
 
-  // Main Answer Processor
+  // User Answer Handler
   const handleUserAnswer = async (spokenText: string) => {
     if (!spokenText.trim() || isLoading || isEvaluating) return;
 
@@ -161,7 +156,7 @@ function InterviewContent() {
     }
 
     try {
-      const historyPayload: DialoguePayload[] = messages.map((m) => ({
+      const historyPayload: DialoguePayload[] = updatedMessages.map((m) => ({
         sender: m.sender,
         text: m.text,
       }));
@@ -169,26 +164,28 @@ function InterviewContent() {
       const data = await interviewApi.getFollowUpQuestion(spokenText, historyPayload);
       const aiReply = data.next_question || data.question || data.response || 'Can you elaborate on your project trade-offs?';
 
-      const nextNum = questionCount + 1;
-      setQuestionCount(nextNum);
+      setQuestionCount((prev) => prev + 1);
 
       const aiMsg: LocalMessage = {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
         text: aiReply
       };
-      setMessages([...updatedMessages, aiMsg]);
+
+      setMessages((prev) => [...prev, aiMsg]);
+      
+      // Next question bolna shuru karein
       triggerAudioPlayback(aiReply);
     } catch (err) {
       const fallbackMsg = 'How do you approach debugging and monitoring in production environments?';
-      setMessages([...updatedMessages, { id: (Date.now() + 1).toString(), sender: 'ai', text: fallbackMsg }]);
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), sender: 'ai', text: fallbackMsg }]);
       triggerAudioPlayback(fallbackMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Continuous Speech Recognition with Silence Buffer
+  // Speech Recognition with Silence Timeout
   const startSpeechListening = () => {
     if (typeof window === 'undefined') return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -243,9 +240,7 @@ function InterviewContent() {
       }
     };
 
-    recognition.onend = () => {
-      // Kept controlled via silence timer
-    };
+    recognition.onend = () => {};
 
     recognitionRef.current = recognition;
     try {
@@ -303,7 +298,6 @@ function InterviewContent() {
 
   return (
     <div className="min-h-screen bg-[#090D16] text-slate-100 flex flex-col justify-between p-4 sm:p-8 font-sans">
-      
       {/* Header */}
       <header className="max-w-5xl w-full mx-auto flex justify-between items-center bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 px-6 py-3.5 rounded-2xl shadow-xl">
         <div className="flex items-center gap-3">
@@ -409,7 +403,7 @@ function InterviewContent() {
             </div>
           ))}
 
-          {/* Live Continuous Transcript Bubble */}
+          {/* Live Continuous Transcript */}
           {isListening && liveTranscript && (
             <div className="flex justify-end">
               <div className="max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed border bg-blue-950/40 border-blue-500/30 text-blue-200 rounded-tr-none">
