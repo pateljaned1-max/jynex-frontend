@@ -2,17 +2,42 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Lock, Mail } from 'lucide-react';
+import { ArrowLeft, Lock, Mail, User } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/');
+
+    // Agar user login kar raha hai aur name field empty hai, toh email se name extract karega
+    const displayName = isSignUp && name ? name : email.split('@')[0];
+
+    const userData = {
+      name: displayName,
+      email: email,
+    };
+
+    // User data ko localStorage mein save karein
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+
+    // Dashboard ya home page par redirect
+    router.push('/dashboard');
+  };
+
+  const handleGoogleLogin = () => {
+    const googleUser = {
+      name: 'Google User',
+      email: 'user@gmail.com',
+    };
+    localStorage.setItem('user', JSON.stringify(googleUser));
+    localStorage.setItem('currentUser', JSON.stringify(googleUser));
+    router.push('/dashboard');
   };
 
   return (
@@ -36,6 +61,25 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          
+          {/* Sign Up mode mein Full Name field show hoga */}
+          {isSignUp && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-3.5 text-slate-500" size={16} />
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Alex Smith"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email</label>
             <div className="relative">
@@ -81,7 +125,7 @@ export default function LoginPage() {
 
         <button
           type="button"
-          onClick={() => router.push('/')}
+          onClick={handleGoogleLogin}
           className="w-full bg-slate-950 hover:bg-slate-800/80 border border-slate-800 text-slate-200 py-2.5 rounded-xl font-medium text-xs transition flex items-center justify-center gap-2"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">

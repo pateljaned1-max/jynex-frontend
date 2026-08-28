@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { 
   ArrowLeft, 
   User, 
@@ -15,6 +16,34 @@ import {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const [profileUser, setProfileUser] = useState({
+    name: 'Candidate',
+    email: 'candidate@example.com',
+  });
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user') || localStorage.getItem('currentUser');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        setProfileUser({
+          name: parsed.name || 'Candidate',
+          email: parsed.email || 'candidate@example.com',
+        });
+      } catch (e) {
+        console.error('Failed to parse user profile:', e);
+      }
+    }
+  }, []);
+
+  const handleSignOut = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('currentUser');
+    router.push('/login');
+  };
+
+  // Name ka pehla letter avatar mein show karne ke liye
+  const avatarInitial = profileUser.name ? profileUser.name.charAt(0).toUpperCase() : 'U';
 
   return (
     <div className="min-h-screen bg-[#070A11] text-slate-100 p-6 sm:p-10 font-sans selection:bg-blue-600 selection:text-white">
@@ -31,15 +60,15 @@ export default function ProfilePage() {
         {/* Profile Card Header */}
         <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-8 mb-8 shadow-2xl flex flex-col sm:flex-row items-center gap-6">
           <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-blue-600/20">
-            R
+            {avatarInitial}
           </div>
           <div className="text-center sm:text-left flex-1">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-2">
               <Sparkles size={12} /> Candidate Pro
             </div>
-            <h1 className="text-2xl font-bold text-white">Rahul Patel</h1>
+            <h1 className="text-2xl font-bold text-white">{profileUser.name}</h1>
             <p className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1.5 mt-1">
-              <Mail size={13} /> rahul.patel@example.com
+              <Mail size={13} /> {profileUser.email}
             </p>
           </div>
         </div>
@@ -86,7 +115,8 @@ export default function ProfilePage() {
 
         {/* Logout Action */}
         <button
-          onClick={() => router.push('/login')}
+          type="button"
+          onClick={handleSignOut}
           className="w-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 py-3.5 rounded-2xl font-semibold text-xs transition flex items-center justify-center gap-2"
         >
           <LogOut size={16} /> Sign Out

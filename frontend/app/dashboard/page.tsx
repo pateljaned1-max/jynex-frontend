@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, 
   Mic, 
@@ -14,6 +15,21 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [userName, setUserName] = useState('User');
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user') || localStorage.getItem('currentUser');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.name) {
+          setUserName(parsed.name);
+        }
+      } catch (e) {
+        console.error('Failed to parse user data:', e);
+      }
+    }
+  }, []);
 
   const recentInterviews = [
     { id: 1, role: 'Technical', score: '87%', date: 'Yesterday', difficulty: 'Medium' },
@@ -77,7 +93,7 @@ export default function DashboardPage() {
         {/* Header Greeting */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
-            Good evening, Rahul 👋
+            Good evening, {userName} 👋
           </h1>
           <p className="text-slate-400 text-sm">
             Ready for your next interview?
