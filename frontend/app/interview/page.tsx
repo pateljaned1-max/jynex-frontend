@@ -33,14 +33,13 @@ import {
   Zap,
   Activity,
   Smile,
-  MonitorUp,
-  User
+  MonitorUp
 } from 'lucide-react';
 
 export default function FullLiveInterviewRoom() {
   const router = useRouter();
 
-  // Call controls state
+  // Call Controls State
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
@@ -55,74 +54,56 @@ export default function FullLiveInterviewRoom() {
   const userVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const recognitionRef = useRef<any>(null);
 
-  // Dynamic Questions & Real-Time Sync State
+  // Dynamic Question & Real-Time Tracker States
   const [questionIndex, setQuestionIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(12 * 60 + 45);
 
   const questionsList = [
     {
       q: 'What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?',
-      userAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
-      correction: 'Great explanation of reconciliation! You could also mention Fiber architecture and batch updating for bonus points.',
-      accuracy: 94,
-      grammar: 'Clean & Concise',
+      keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
+      defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
       keyConcept: 'Virtual DOM Diffing & Reconciliation',
-      commScore: 88,
-      techScore: 92,
-      confScore: 90,
-      probScore: 85,
-      wpm: 138,
-      filler: 2,
-      emotion: 'Calm & Confident',
-      decision: 'Alex approved technical accuracy. Difficulty maintained at Medium-Hard level.',
-      alexNote: 'Candidate performed well in React diffing algorithm.',
-      emmaNote: 'Confidence and tone are well-balanced.',
-      sarahNote: 'Ready for higher system design queries.'
+      alexNote: 'Strong knowledge of React reconciliation.',
+      emmaNote: 'Confident delivery, concise speech.',
+      sarahNote: 'Ready for deep architecture questions.'
     },
     {
       q: 'Can you explain how indexing works in MongoDB and when you should use a compound index?',
-      userAnswer: 'MongoDB uses B-trees for indexes. Single field indexes work on one field, while compound indexes index multiple fields to optimize complex queries.',
-      correction: 'Strong answer! Be sure to emphasize index prefix rules and index order (ESR rule: Equality, Sort, Range).',
-      accuracy: 89,
-      grammar: 'Precise and Structured',
+      keywords: ['mongodb', 'index', 'b-tree', 'compound', 'query', 'execution', 'performance', 'scan'],
+      defaultAnswer: 'MongoDB uses B-trees for indexes. Single field indexes work on one field, while compound indexes index multiple fields to optimize complex queries.',
       keyConcept: 'ESR Rule & Compound B-Tree Indexing',
-      commScore: 82,
-      techScore: 95,
-      confScore: 87,
-      probScore: 91,
-      wpm: 145,
-      filler: 4,
-      emotion: 'Analytical & Focused',
-      decision: 'Emma detected hesitation on B-Trees. Sarah generated next edge-case question.',
-      alexNote: 'Strong index knowledge; missed ESR edge case.',
-      emmaNote: 'Pace slightly fast during indexing explanation.',
-      sarahNote: 'Pushed question difficulty to Hard.'
+      alexNote: 'Good understanding of index scan limitations.',
+      emmaNote: 'Pacing was natural, structured reasoning.',
+      sarahNote: 'Advancing difficulty level to Senior.'
     },
     {
       q: 'How do you handle rate limiting in a microservices backend built with Node.js and Redis?',
-      userAnswer: 'I implement a token bucket or sliding window algorithm using Redis to keep a centralized counter per IP or API key token.',
-      correction: 'Spot on with Redis. Mention adding HTTP 429 Too Many Requests status and Retry-After headers for complete API contracts.',
-      accuracy: 97,
-      grammar: 'High Technical Depth',
+      keywords: ['redis', 'token bucket', 'rate limit', 'sliding window', 'headers', '429', 'throttle'],
+      defaultAnswer: 'I implement a token bucket or sliding window algorithm using Redis to keep a centralized counter per IP or API key.',
       keyConcept: 'Redis Token Bucket & HTTP 429',
-      commScore: 95,
-      techScore: 98,
-      confScore: 94,
-      probScore: 96,
-      wpm: 132,
-      filler: 1,
-      emotion: 'Highly Confident',
-      decision: 'Unanimous AI approval: Candidate ready for System Architecture challenge.',
-      alexNote: 'Flawless Redis sliding window explanation.',
-      emmaNote: 'Clear delivery, zero nervous fillers detected.',
-      sarahNote: 'Candidate recommended for Senior Engineering track.'
+      alexNote: 'Flawless Redis sliding window architecture.',
+      emmaNote: 'Zero hesitations, authoritative tone.',
+      sarahNote: 'Candidate clears technical bar with high marks.'
     }
   ];
 
-  const currentData = questionsList[questionIndex];
+  const currentQ = questionsList[questionIndex];
 
-  // Dynamic user name from localStorage
+  // LIVE DYNAMIC METRICS STATE (Changes as user speaks)
+  const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
+  const [liveAccuracy, setLiveAccuracy] = useState(92);
+  const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
+  const [liveGrammar, setLiveGrammar] = useState('Clear & Technical');
+  const [liveScores, setLiveScores] = useState({ comm: 88, tech: 92, conf: 90, prob: 86 });
+  const [liveFiller, setLiveFiller] = useState(1);
+  const [liveWpm, setLiveWpm] = useState(136);
+  const [liveEmotion, setLiveEmotion] = useState('Calm & Focused');
+  const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response.');
+
+  // Load Candidate Name
   useEffect(() => {
     const saved = localStorage.getItem('user') || localStorage.getItem('currentUser');
     if (saved) {
@@ -135,7 +116,7 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Web Speech API: AI speaks question aloud
+  // Text-To-Speech (AI Voice)
   const speakText = (text: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMuted) return;
@@ -143,7 +124,7 @@ export default function FullLiveInterviewRoom() {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
-    utterance.pitch = 1.1;
+    utterance.pitch = 1.05;
 
     utterance.onstart = () => setIsAiSpeaking(true);
     utterance.onend = () => setIsAiSpeaking(false);
@@ -152,21 +133,94 @@ export default function FullLiveInterviewRoom() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Speak initial question on load & whenever question changes
+  // Trigger speech on question switch
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      speakText(currentData.q);
-    }, 800);
+    const timer = setTimeout(() => {
+      speakText(currentQ.q);
+    }, 600);
 
     return () => {
-      clearTimeout(timeout);
+      clearTimeout(timer);
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     };
   }, [questionIndex, isSpeakerMuted]);
 
-  // Real Webcam initialization & graceful fallback
+  // LIVE SPEECH RECOGNITION (Speech-To-Text from user's mic)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        interimTranscript += event.results[i][0].transcript;
+      }
+
+      if (interimTranscript.trim().length > 0) {
+        const spokenText = interimTranscript;
+        setLiveAnswer(spokenText);
+
+        // Calculate dynamic real-time accuracy based on keyword hit rate
+        const lower = spokenText.toLowerCase();
+        const matched = currentQ.keywords.filter((kw) => lower.includes(kw));
+        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / currentQ.keywords.length) * 35)));
+        setLiveAccuracy(matchRatio);
+
+        // Update live metrics dynamically
+        const words = spokenText.split(/\s+/).length;
+        setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
+        
+        const fillerMatches = spokenText.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
+        setLiveFiller(fillerMatches.length);
+
+        setLiveScores({
+          comm: Math.min(98, 80 + Math.round(words * 0.4)),
+          tech: matchRatio,
+          conf: Math.max(75, 96 - fillerMatches.length * 4),
+          prob: Math.min(96, 82 + matched.length * 3)
+        });
+
+        if (matched.length >= 3) {
+          setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Add edge-case considerations to hit 100%.`);
+          setLiveGrammar('Sharp & Structured');
+          setLiveDecision('All 3 AI agents approve technical accuracy. Ready to advance difficulty.');
+        } else {
+          setLiveCorrection(`Try mentioning relevant terms like: ${currentQ.keywords.slice(0, 3).join(', ')}.`);
+          setLiveGrammar('Developing Argument');
+          setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
+        }
+      }
+    };
+
+    recognition.onerror = (e: any) => console.log('Speech Recognition:', e.error);
+
+    if (!isMicMuted) {
+      try {
+        recognition.start();
+      } catch (err) {}
+    } else {
+      recognition.stop();
+    }
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      try {
+        recognition.stop();
+      } catch (err) {}
+    };
+  }, [isMicMuted, questionIndex]);
+
+  // Real Webcam initialization
   useEffect(() => {
     let stream: MediaStream | null = null;
 
@@ -182,7 +236,7 @@ export default function FullLiveInterviewRoom() {
         }
         setCameraError(null);
       } catch (err) {
-        setCameraError('Camera off / not available');
+        setCameraError('Camera access denied');
       }
     }
 
@@ -201,24 +255,6 @@ export default function FullLiveInterviewRoom() {
       }
     };
   }, [isVideoOff]);
-
-  const toggleVideo = () => {
-    setIsVideoOff((prev) => !prev);
-  };
-
-  // Timer countdown
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatTimer = (s: number) => {
-    const min = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-  };
 
   // Audio Canvas Visualizer
   useEffect(() => {
@@ -276,14 +312,40 @@ export default function FullLiveInterviewRoom() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isMicMuted]);
 
+  // Timer countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTimer = (s: number) => {
+    const min = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  // Switch to next question and reset dynamic state
   const handleNextQuestion = () => {
-    setQuestionIndex((prev) => (prev + 1) % questionsList.length);
+    const nextIdx = (questionIndex + 1) % questionsList.length;
+    setQuestionIndex(nextIdx);
+    const nextQData = questionsList[nextIdx];
+    
+    // Dynamically reset tracker data for next round
+    setLiveAnswer(nextQData.defaultAnswer);
+    setLiveAccuracy(90 + Math.floor(Math.random() * 8));
+    setLiveCorrection(`Listening for answer on ${nextQData.keyConcept}...`);
+    setLiveScores({ comm: 88, tech: 90, conf: 92, prob: 88 });
+    setLiveFiller(0);
+    setLiveWpm(132);
+    setLiveDecision('Question updated. AI agents primed for evaluation.');
   };
 
   return (
     <div className="h-screen w-screen bg-[#040711] text-slate-200 font-sans flex flex-col overflow-hidden select-none">
       
-      {/* TOP HEADER */}
+      {/* HEADER */}
       <header className="h-14 border-b border-slate-800/80 bg-[#060a17]/95 px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -363,15 +425,15 @@ export default function FullLiveInterviewRoom() {
           </div>
         </aside>
 
-        {/* CENTER COLUMN: DUAL CALL TILES + CORRECTION + DECISION PIPELINE */}
+        {/* CENTER COLUMN: TILES + TRACKER + COLLABORATION */}
         <main className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gradient-to-b from-[#060a16] via-[#050812] to-[#03050c]">
           
           {/* VIDEO CALL STREAM TILES */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 shrink-0">
             
-            {/* AI Talking Interviewer Avatar Tile */}
+            {/* AI Speaking Avatar Tile */}
             <div className={`bg-slate-950 border rounded-2xl relative overflow-hidden shadow-xl flex flex-col justify-between p-3.5 transition-all ${
-              isAiSpeaking ? 'border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.2)]' : 'border-slate-800'
+              isAiSpeaking ? 'border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.25)]' : 'border-slate-800'
             }`}>
               <div className="w-full flex items-center justify-between text-xs z-10">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-medium text-[10px]">
@@ -383,11 +445,11 @@ export default function FullLiveInterviewRoom() {
                     : 'text-slate-400 bg-slate-900/80 border-slate-800'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
-                  {isAiSpeaking ? 'Speaking Question...' : 'Listening'}
+                  {isAiSpeaking ? 'Speaking Question...' : 'Listening to You'}
                 </span>
               </div>
 
-              {/* Glowing Interactive Speaking Orb Avatar */}
+              {/* Glowing Dynamic Orb Avatar with Speaking Motion */}
               <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
                 <div className={`absolute rounded-full transition-all duration-700 ${
                   isAiSpeaking 
@@ -401,7 +463,7 @@ export default function FullLiveInterviewRoom() {
                     <img
                       src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80"
                       alt="Sarah AI"
-                      className={`w-full h-full object-cover rounded-full ${isAiSpeaking ? 'brightness-110' : 'brightness-75'}`}
+                      className={`w-full h-full object-cover rounded-full transition-all ${isAiSpeaking ? 'brightness-110' : 'brightness-75'}`}
                     />
                   </div>
                 </div>
@@ -434,7 +496,6 @@ export default function FullLiveInterviewRoom() {
               </div>
 
               <div className="absolute inset-0 z-0">
-                {/* Fallback Animated Avatar when Camera is Turned Off */}
                 {isVideoOff ? (
                   <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-[#070e24] to-slate-950">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-2xl shadow-cyan-500/20 flex items-center justify-center animate-pulse">
@@ -445,7 +506,7 @@ export default function FullLiveInterviewRoom() {
                       </div>
                     </div>
                     <span className="text-xs text-slate-400 mt-2 font-medium">{candidateName}</span>
-                    <span className="text-[10px] text-slate-500">Camera stream is muted</span>
+                    <span className="text-[10px] text-slate-500">Camera stream muted</span>
                   </div>
                 ) : cameraError ? (
                   <div className="w-full h-full flex items-center justify-center bg-slate-950 text-amber-400/80 flex-col gap-1 p-3 text-center">
@@ -470,7 +531,7 @@ export default function FullLiveInterviewRoom() {
                   {candidateName}
                 </span>
                 <span className={`text-[10px] font-mono ${isMicMuted ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  {isMicMuted ? 'Mic Muted' : 'Microphone Active'}
+                  {isMicMuted ? 'Mic Muted' : 'Speaking Live (Transcribing...)'}
                 </span>
               </div>
             </div>
@@ -491,7 +552,7 @@ export default function FullLiveInterviewRoom() {
             </button>
 
             <button
-              onClick={toggleVideo}
+              onClick={() => setIsVideoOff(!isVideoOff)}
               className={`w-9 h-9 rounded-lg flex items-center justify-center transition border ${
                 isVideoOff
                   ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
@@ -547,17 +608,17 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
-                Model: Jynex Evaluator v2.4
+                Model: Jynex Evaluator v2.4 (Real-Time)
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
               <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <MessageSquare size={12} className="text-blue-400" /> Captured Candidate Speech
+                  <MessageSquare size={12} className="text-blue-400" /> Live Captured Speech
                 </span>
-                <p className="text-slate-300 text-[11px] leading-relaxed italic">
-                  "{currentData.userAnswer}"
+                <p className="text-slate-200 text-[11px] leading-relaxed italic bg-slate-950/40 p-2 rounded-lg border border-slate-800/60 max-h-16 overflow-y-auto">
+                  "{liveAnswer}"
                 </p>
               </div>
 
@@ -566,7 +627,7 @@ export default function FullLiveInterviewRoom() {
                   <AlertTriangle size={12} /> AI Live Correction / Recommendation
                 </span>
                 <p className="text-slate-300 text-[11px] leading-relaxed">
-                  {currentData.correction}
+                  {liveCorrection}
                 </p>
               </div>
 
@@ -576,18 +637,18 @@ export default function FullLiveInterviewRoom() {
                     <TrendingUp size={12} className="text-emerald-400" /> Accuracy & Fluency
                   </span>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-2xl font-black text-emerald-400">{currentData.accuracy}%</span>
-                    <span className="text-[10px] text-slate-400">{currentData.grammar}</span>
+                    <span className="text-2xl font-black text-emerald-400">{liveAccuracy}%</span>
+                    <span className="text-[10px] text-slate-400">{liveGrammar}</span>
                   </div>
                 </div>
                 <div className="mt-2 pt-1 border-t border-slate-800 text-[10px] text-slate-400">
-                  Concept: <span className="text-white font-medium">{currentData.keyConcept}</span>
+                  Concept: <span className="text-white font-medium">{currentQ.keyConcept}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* AGENT COLLABORATION DECISION WORKFLOW (DYNAMIC DATA) */}
+          {/* AGENT COLLABORATION DECISION WORKFLOW */}
           <div className="bg-slate-900/40 rounded-2xl p-4 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
@@ -606,7 +667,7 @@ export default function FullLiveInterviewRoom() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white">Technical AI (Alex)</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentData.alexNote}</p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.alexNote}</p>
                 </div>
               </div>
 
@@ -616,7 +677,7 @@ export default function FullLiveInterviewRoom() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white">Behavioural AI (Emma)</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentData.emmaNote}</p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.emmaNote}</p>
                 </div>
               </div>
 
@@ -626,7 +687,7 @@ export default function FullLiveInterviewRoom() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white">Hiring Manager AI (Sarah)</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentData.sarahNote}</p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.sarahNote}</p>
                 </div>
               </div>
             </div>
@@ -637,7 +698,7 @@ export default function FullLiveInterviewRoom() {
                 <Zap size={14} className="animate-pulse text-cyan-400" />
                 <span>AI Collaboration Decision</span>
               </div>
-              <p className="text-xs text-slate-300 mt-1 font-medium">{currentData.decision}</p>
+              <p className="text-xs text-slate-300 mt-1 font-medium">{liveDecision}</p>
             </div>
 
             {/* Next Question CTA Banner */}
@@ -659,14 +720,14 @@ export default function FullLiveInterviewRoom() {
 
         </main>
 
-        {/* RIGHT SIDEBAR: DYNAMIC ANALYSIS & LIVE TRANSCRIPTIONS */}
+        {/* RIGHT SIDEBAR: REAL-TIME DYNAMIC METRICS */}
         <aside className="w-80 border-l border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 overflow-y-auto hidden xl:flex space-y-4">
           
           {/* LIVE ANALYSIS DYNAMIC METRICS */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <Activity size={14} className="text-cyan-400" /> Live Analysis
+                <Activity size={14} className="text-cyan-400" /> Live Dynamic Analysis
               </span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </div>
@@ -676,12 +737,12 @@ export default function FullLiveInterviewRoom() {
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <MessageSquare size={13} className="text-cyan-400" /> Communication
                 </span>
-                <span className="font-bold text-white">{currentData.commScore}%</span>
+                <span className="font-bold text-white">{liveScores.comm}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500" 
-                  style={{ width: `${currentData.commScore}%` }}
+                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.comm}%` }}
                 />
               </div>
             </div>
@@ -691,12 +752,12 @@ export default function FullLiveInterviewRoom() {
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Code2 size={13} className="text-blue-400" /> Technical Skills
                 </span>
-                <span className="font-bold text-white">{currentData.techScore}%</span>
+                <span className="font-bold text-white">{liveScores.tech}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500" 
-                  style={{ width: `${currentData.techScore}%` }}
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.tech}%` }}
                 />
               </div>
             </div>
@@ -706,12 +767,12 @@ export default function FullLiveInterviewRoom() {
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Sparkles size={13} className="text-purple-400" /> Confidence
                 </span>
-                <span className="font-bold text-white">{currentData.confScore}%</span>
+                <span className="font-bold text-white">{liveScores.conf}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500" 
-                  style={{ width: `${currentData.confScore}%` }}
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.conf}%` }}
                 />
               </div>
             </div>
@@ -721,12 +782,12 @@ export default function FullLiveInterviewRoom() {
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Zap size={13} className="text-amber-400" /> Problem Solving
                 </span>
-                <span className="font-bold text-white">{currentData.probScore}%</span>
+                <span className="font-bold text-white">{liveScores.prob}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500" 
-                  style={{ width: `${currentData.probScore}%` }}
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.prob}%` }}
                 />
               </div>
             </div>
@@ -734,18 +795,18 @@ export default function FullLiveInterviewRoom() {
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl text-center">
                 <span className="text-[10px] text-slate-500 uppercase block font-semibold">Filler Words</span>
-                <span className="text-sm font-bold text-white">~ {currentData.filler}</span>
+                <span className="text-sm font-bold text-white">~ {liveFiller}</span>
               </div>
               <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl text-center">
                 <span className="text-[10px] text-slate-500 uppercase block font-semibold">Speaking Pace</span>
-                <span className="text-sm font-bold text-white">~ {currentData.wpm} WPM</span>
+                <span className="text-sm font-bold text-white">~ {liveWpm} WPM</span>
               </div>
             </div>
 
             <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
               <span className="text-xs text-slate-400 font-medium">Emotion Status</span>
               <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
-                <Smile size={14} /> {currentData.emotion}
+                <Smile size={14} /> {liveEmotion}
               </span>
             </div>
           </div>
@@ -754,23 +815,23 @@ export default function FullLiveInterviewRoom() {
           <div className="space-y-2 pt-2 border-t border-slate-800 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between pb-1">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <CheckCircle2 size={14} className="text-cyan-400" /> Transcriptions
+                <CheckCircle2 size={14} className="text-cyan-400" /> Live Transcripts
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">Live Sync</span>
+              <span className="text-[10px] text-slate-500 font-mono">Continuous</span>
             </div>
 
             <div className="space-y-2 overflow-y-auto max-h-52 pr-1 text-xs">
               <div className="bg-gradient-to-r from-blue-950/40 to-slate-900/80 border border-blue-500/30 p-2.5 rounded-xl space-y-1">
                 <span className="text-[10px] font-bold text-blue-400 block">AI Interviewer (Speaking)</span>
                 <p className="text-white font-medium leading-snug">
-                  "{currentData.q}"
+                  "{currentQ.q}"
                 </p>
               </div>
 
               <div className="bg-slate-900/40 border border-slate-800/60 p-2.5 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 block">{candidateName} (Captured Answer)</span>
+                <span className="text-[10px] font-bold text-slate-400 block">{candidateName} (Live Speech)</span>
                 <p className="text-slate-300 leading-snug italic">
-                  "{currentData.userAnswer}"
+                  "{liveAnswer}"
                 </p>
               </div>
             </div>
