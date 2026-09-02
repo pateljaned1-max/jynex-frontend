@@ -348,14 +348,14 @@ export default function FullLiveInterviewRoom() {
       {/* HEADER */}
       <header className="h-14 border-b border-slate-800/80 bg-[#060a17]/95 px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-base shadow-lg shadow-cyan-500/20">
               <Sparkles size={16} />
             </div>
-            <span className="font-extrabold text-lg tracking-tight text-white">
-              Interview<span className="text-cyan-400">AI</span>
+            <span className="font-extrabold text-lg tracking-tight text-white uppercase">
+              JYNEX <span className="text-cyan-400">AGENT</span>
             </span>
-          </div>
+          </Link>
 
           <div className="h-4 w-[1px] bg-slate-800" />
 
@@ -391,7 +391,7 @@ export default function FullLiveInterviewRoom() {
       {/* MAIN VIEWPORT */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* LEFT NAV SIDEBAR */}
+        {/* LEFT NAV SIDEBAR (Linked to /agents and /reports) */}
         <aside className="w-52 border-r border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 hidden lg:flex">
           <nav className="space-y-1.5">
             <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
@@ -400,15 +400,15 @@ export default function FullLiveInterviewRoom() {
             <Link href="/interview" className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500/15 to-blue-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold shadow-lg shadow-cyan-500/5">
               <Video size={15} className="text-cyan-400" /> Interview Room
             </Link>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
+            <Link href="/agents" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
               <Bot size={15} /> AI Agents
-            </a>
+            </Link>
             <Link href="/results" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
               <LineChart size={15} /> Analysis
             </Link>
-            <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
+            <Link href="/reports" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
               <FileText size={15} /> Reports
-            </a>
+            </Link>
             <Link href="/profile" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
               <Settings size={15} /> Settings
             </Link>
