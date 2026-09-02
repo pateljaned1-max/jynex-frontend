@@ -124,12 +124,12 @@ export default function LandingPage() {
           </span>
         </Link>
 
-        {/* Links */}
+        {/* Navigation Links with Corrected AI Agents Route */}
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
           <Link href="/dashboard" className="hover:text-cyan-400 transition">
             Dashboard
           </Link>
-          <Link href="/interview" className="hover:text-cyan-400 transition">
+          <Link href="/agents" className="hover:text-cyan-400 transition">
             AI Agents
           </Link>
           <Link href="/interview" className="hover:text-cyan-400 transition flex items-center gap-1.5">
@@ -250,7 +250,11 @@ export default function LandingPage() {
 
         {/* 3. FOUR FEATURE CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-5 hover:border-cyan-500/40 transition duration-300 shadow-lg group">
+          
+          <div 
+            onClick={() => router.push('/interview')}
+            className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-5 hover:border-cyan-500/40 transition duration-300 shadow-lg group cursor-pointer"
+          >
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Zap size={20} />
             </div>
@@ -260,17 +264,26 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-5 hover:border-purple-500/40 transition duration-300 shadow-lg group">
+          <div 
+            onClick={() => router.push('/agents')}
+            className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-5 hover:border-purple-500/40 transition duration-300 shadow-lg group cursor-pointer"
+          >
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Bot size={20} />
             </div>
-            <h3 className="text-base font-bold text-white mb-1">AI Adaptive</h3>
+            <h3 className="text-base font-bold text-white mb-1 flex items-center justify-between">
+              <span>AI Adaptive</span>
+              <ArrowRight size={14} className="text-purple-400 group-hover:translate-x-1 transition-transform" />
+            </h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Dynamic follow-up questions formulated on-the-fly based on candidate answers.
+              Meet Alex, Sarah & Emma. Dynamic follow-ups customized to your tech stack.
             </p>
           </div>
 
-          <div className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-5 hover:border-emerald-500/40 transition duration-300 shadow-lg group">
+          <div 
+            onClick={() => router.push('/results')}
+            className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-5 hover:border-emerald-500/40 transition duration-300 shadow-lg group cursor-pointer"
+          >
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <BarChart3 size={20} />
             </div>
@@ -280,7 +293,10 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-5 hover:border-amber-500/40 transition duration-300 shadow-lg group">
+          <div 
+            onClick={() => router.push('/interview')}
+            className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-5 hover:border-amber-500/40 transition duration-300 shadow-lg group cursor-pointer"
+          >
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <Shield size={20} />
             </div>
@@ -343,6 +359,7 @@ export default function LandingPage() {
           <span>© 2026. Next-Generation Autonomous Technical Interviewer.</span>
         </div>
         <div className="flex items-center gap-4 text-slate-400">
+          <Link href="/agents" className="hover:text-cyan-400 transition">AI Agents</Link>
           <Link href="/interview" className="hover:text-cyan-400 transition">Interview Room</Link>
           <Link href="/results" className="hover:text-cyan-400 transition">Scorecard</Link>
           <Link href="/profile" className="hover:text-cyan-400 transition">Profile</Link>
