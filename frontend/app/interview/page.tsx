@@ -29,8 +29,11 @@ import {
   Zap,
   Activity,
   Smile,
-  AlertTriangle
+  AlertTriangle,
+  User
 } from 'lucide-react';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
 
 export default function FullLiveInterviewRoom() {
   const router = useRouter();
@@ -45,6 +48,7 @@ export default function FullLiveInterviewRoom() {
   // Active AI Agent State
   const [selectedAgentId, setSelectedAgentId] = useState<'sarah' | 'alex' | 'emma'>('sarah');
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
 
   // Video Refs
   const userVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -83,11 +87,11 @@ export default function FullLiveInterviewRoom() {
 
   const currentAgent = agentsProfile[selectedAgentId];
 
-  // Dynamic Question State
+  // Questions State
   const [questionIndex, setQuestionIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(12 * 60 + 45);
 
-  const questionsList = [
+  const fallbackQuestions = [
     {
       q: 'What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?',
       keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
@@ -117,9 +121,10 @@ export default function FullLiveInterviewRoom() {
     }
   ];
 
-  const currentQ = questionsList[questionIndex];
+  const [currentPrompt, setCurrentPrompt] = useState(fallbackQuestions[0].q);
+  const currentQ = fallbackQuestions[questionIndex % fallbackQuestions.length];
 
-  // Live Metrics
+  // Live Metrics State
   const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
   const [liveAccuracy, setLiveAccuracy] = useState(92);
   const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
@@ -141,9 +146,22 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Save Dynamic Session Result to LocalStorage & Navigate
-  const handleEndInterview = () => {
-    const finalSessionData = {
+  // Step 3: Handle End Interview with Backend Evaluation Call
+  const handleEndInterview = async () => {
+    setIsEvaluating(true);
+
+    const sessionPayload = {
+      candidateName: candidateName || 'Candidate',
+      agentName: currentAgent.name,
+      transcript: liveAnswer,
+      metrics: {
+        wpm: liveWpm,
+        fillerWords: liveFiller,
+        accuracy: liveAccuracy
+      }
+    };
+
+    let finalScorecard = {
       overallScore: liveAccuracy,
       technicalScore: liveScores.tech,
       communicationScore: liveScores.comm,
@@ -158,9 +176,34 @@ export default function FullLiveInterviewRoom() {
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     };
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('latestInterviewResult', JSON.stringify(finalSessionData));
+    try {
+      const evalRes = await fetch(`${BACKEND_URL}/api/interview/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sessionPayload)
+      });
+
+      if (evalRes.ok) {
+        const evalData = await evalRes.json();
+        finalScorecard = {
+          ...finalScorecard,
+          overallScore: evalData.overallScore ?? evalData.score ?? liveAccuracy,
+          technicalScore: evalData.technicalScore ?? evalData.technical ?? liveScores.tech,
+          communicationScore: evalData.communicationScore ?? evalData.communication ?? liveScores.comm,
+          confidenceScore: evalData.confidenceScore ?? evalData.confidence ?? liveScores.conf,
+          problemSolvingScore: evalData.problemSolvingScore ?? evalData.problemSolving ?? liveScores.prob,
+          keyConcept: evalData.keyConcept || currentQ.keyConcept
+        };
+      }
+    } catch (err) {
+      console.warn('Backend evaluate offline, saving local metrics:', err);
     }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('latestInterviewResult', JSON.stringify(finalScorecard));
+    }
+
+    setIsEvaluating(false);
     router.push('/results');
   };
 
@@ -226,7 +269,7 @@ export default function FullLiveInterviewRoom() {
   // Trigger speech on question change or agent switch
   useEffect(() => {
     const timer = setTimeout(() => {
-      speakText(currentQ.q, currentAgent.gender);
+      speakText(currentPrompt, currentAgent.gender);
     }, 450);
 
     return () => {
@@ -235,7 +278,7 @@ export default function FullLiveInterviewRoom() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [questionIndex, selectedAgentId, isSpeakerMuted]);
+  }, [currentPrompt, selectedAgentId, isSpeakerMuted]);
 
   // Speech-To-Text Recognition
   useEffect(() => {
@@ -280,7 +323,7 @@ export default function FullLiveInterviewRoom() {
         if (matched.length >= 3) {
           setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Add edge-case considerations to hit 100%.`);
           setLiveGrammar('Sharp & Structured');
-          setLiveDecision(`All 3 AI agents approve technical accuracy. Ready to advance.`);
+          setLiveDecision('All 3 AI agents approve technical accuracy. Ready to advance.');
         } else {
           setLiveCorrection(`Try mentioning relevant terms like: ${currentQ.keywords.slice(0, 3).join(', ')}.`);
           setLiveGrammar('Developing Argument');
@@ -410,14 +453,38 @@ export default function FullLiveInterviewRoom() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const handleNextQuestion = () => {
-    const nextIdx = (questionIndex + 1) % questionsList.length;
+  // Step 2: Handle Next Question via Backend Groq Engine
+  const handleNextQuestion = async () => {
+    let nextPrompt = '';
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/interview/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: currentAgent.name.toLowerCase(),
+          previousAnswer: liveAnswer || '',
+          topic: 'Fullstack & Cloud Architecture'
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        nextPrompt = data.question || data.text || '';
+      }
+    } catch (err) {
+      console.warn('Backend question fetch failed, using local cycle:', err);
+    }
+
+    const nextIdx = (questionIndex + 1) % fallbackQuestions.length;
     setQuestionIndex(nextIdx);
-    const nextQData = questionsList[nextIdx];
-    
-    setLiveAnswer(nextQData.defaultAnswer);
+    const fallbackData = fallbackQuestions[nextIdx];
+
+    const finalQuestionText = nextPrompt.trim().length > 0 ? nextPrompt : fallbackData.q;
+    setCurrentPrompt(finalQuestionText);
+    setLiveAnswer(fallbackData.defaultAnswer);
     setLiveAccuracy(90 + Math.floor(Math.random() * 8));
-    setLiveCorrection(`Listening for answer on ${nextQData.keyConcept}...`);
+    setLiveCorrection(`Listening for answer on ${fallbackData.keyConcept}...`);
     setLiveScores({ comm: 88, tech: 90, conf: 92, prob: 88 });
     setLiveFiller(0);
     setLiveWpm(132);
@@ -464,9 +531,10 @@ export default function FullLiveInterviewRoom() {
 
         <button
           onClick={handleEndInterview}
-          className="bg-rose-600/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 px-4 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-lg shadow-rose-600/10"
+          disabled={isEvaluating}
+          className="bg-rose-600/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 px-4 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-lg shadow-rose-600/10 disabled:opacity-50"
         >
-          <PhoneOff size={14} /> End Interview
+          <PhoneOff size={14} /> {isEvaluating ? 'Evaluating...' : 'End Interview'}
         </button>
       </header>
 
@@ -563,16 +631,14 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
 
-              {/* Avatar View Container (Center Headshot Aspect) */}
+              {/* Avatar View Container */}
               <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-black">
-                {/* High-res Portrait poster fallback */}
                 <img
                   src={currentAgent.poster}
                   alt={currentAgent.name}
                   className="w-full h-full object-cover object-top absolute inset-0 z-0 brightness-95"
                 />
 
-                {/* Idle Video Stream */}
                 <video
                   ref={idleVideoRef}
                   key={`idle-${selectedAgentId}`}
@@ -586,7 +652,6 @@ export default function FullLiveInterviewRoom() {
                   }`}
                 />
 
-                {/* Talking Video Stream */}
                 <video
                   ref={talkingVideoRef}
                   key={`talking-${selectedAgentId}`}
@@ -715,9 +780,10 @@ export default function FullLiveInterviewRoom() {
 
             <button
               onClick={handleEndInterview}
-              className="px-5 h-9 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-2 transition shadow-lg shadow-rose-600/20 ml-2"
+              disabled={isEvaluating}
+              className="px-5 h-9 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-2 transition shadow-lg shadow-rose-600/20 ml-2 disabled:opacity-50"
             >
-              <PhoneOff size={15} /> End Interview
+              <PhoneOff size={15} /> {isEvaluating ? 'Evaluating...' : 'End Interview'}
             </button>
           </div>
 
@@ -844,7 +910,7 @@ export default function FullLiveInterviewRoom() {
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION GENERATOR</span>
                 <span className="text-xs font-semibold text-white">
-                  Question {questionIndex + 1} of {questionsList.length} • Difficulty: Medium → <strong className="text-amber-300">Hard</strong>
+                  Question {questionIndex + 1} • Topic: <strong className="text-amber-300">{currentQ.keyConcept}</strong>
                 </span>
               </div>
               <button
