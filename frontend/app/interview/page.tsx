@@ -1034,4 +1034,4 @@ export default function FullLiveInterviewRoom() {
       </div>
     </div>
   );
-} 
+}  
