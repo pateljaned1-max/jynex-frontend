@@ -29,8 +29,7 @@ import {
   Zap,
   Activity,
   Smile,
-  AlertTriangle,
-  User
+  AlertTriangle
 } from 'lucide-react';
 
 export default function FullLiveInterviewRoom() {
@@ -62,8 +61,7 @@ export default function FullLiveInterviewRoom() {
       gender: 'female' as const,
       poster: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=85',
       idleVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
-      badgeColor: 'text-amber-300 border-amber-500/30 bg-amber-500/10'
+      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4'
     },
     alex: {
       name: 'Alex',
@@ -71,8 +69,7 @@ export default function FullLiveInterviewRoom() {
       gender: 'male' as const,
       poster: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=85',
       idleVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      badgeColor: 'text-cyan-300 border-cyan-500/30 bg-cyan-500/10'
+      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4'
     },
     emma: {
       name: 'Emma',
@@ -80,8 +77,7 @@ export default function FullLiveInterviewRoom() {
       gender: 'female' as const,
       poster: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=800&q=85',
       idleVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
-      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-      badgeColor: 'text-purple-300 border-purple-500/30 bg-purple-500/10'
+      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4'
     }
   };
 
@@ -145,7 +141,7 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Save Dynamic Session Result to LocalStorage & Navigate (Fixes fallback scoreboard)
+  // Save Dynamic Session Result to LocalStorage & Navigate
   const handleEndInterview = () => {
     const finalSessionData = {
       overallScore: liveAccuracy,
@@ -315,7 +311,7 @@ export default function FullLiveInterviewRoom() {
     async function startCamera() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
+          video: { width: 1280, height: 720 },
           audio: false,
         });
         mediaStreamRef.current = stream;
@@ -546,148 +542,183 @@ export default function FullLiveInterviewRoom() {
             </div>
           </div>
 
-          {/* MAIN STAGE VIDEO CALL CONTAINER */}
-          <div className="relative w-full h-[375px] bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shrink-0 flex items-center justify-center">
+          {/* BALANCED 50-50 VIDEO CALL STAGE (EQUAL RATIO PROPORTIONS) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[340px] shrink-0">
             
-            {/* Top Status Pill */}
-            <div className="absolute top-4 left-5 z-20 flex items-center gap-2 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/60 shadow-lg">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]" />
-              <span className="text-xs font-bold text-white tracking-wide">{currentAgent.name} AI • LIVE</span>
-            </div>
+            {/* TILE 1: DYNAMIC ACTIVE AI AGENT VIDEO STREAM */}
+            <div className={`bg-slate-950 border rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 transition-all duration-300 ${
+              isAiSpeaking ? 'border-cyan-400/90 shadow-[0_0_35px_rgba(6,182,212,0.3)]' : 'border-slate-800'
+            }`}>
+              <div className="w-full flex items-center justify-between text-xs z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] backdrop-blur-md">
+                  <Sparkles size={13} className="text-cyan-400" /> {currentAgent.name} ({currentAgent.role})
+                </span>
+                <span className={`text-[10px] font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md ${
+                  isAiSpeaking 
+                    ? 'text-emerald-400 bg-emerald-950/85 border-emerald-500/50' 
+                    : 'text-slate-400 bg-slate-900/80 border-slate-800'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
+                  {isAiSpeaking ? 'Speaking Live...' : 'Listening'}
+                </span>
+              </div>
 
-            {/* DYNAMIC REAL HUMAN VIDEO AVATAR ENGINE */}
-            <div className="w-full h-full relative flex items-center justify-center overflow-hidden bg-black">
-              
-              {/* Fallback portrait to ensure avatar is NEVER blank */}
-              <img
-                src={currentAgent.poster}
-                alt={currentAgent.name}
-                className="w-full h-full object-cover object-top absolute inset-0 z-0 brightness-95"
-              />
-
-              {/* Idle Stream */}
-              <video
-                ref={idleVideoRef}
-                key={`idle-${selectedAgentId}`}
-                src={currentAgent.idleVideo}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className={`w-full h-full object-cover object-top absolute inset-0 z-10 transition-opacity duration-300 ${
-                  isAiSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                }`}
-              />
-
-              {/* Talking Stream */}
-              <video
-                ref={talkingVideoRef}
-                key={`talking-${selectedAgentId}`}
-                src={currentAgent.talkingVideo}
-                loop
-                muted
-                playsInline
-                className={`w-full h-full object-cover object-top absolute inset-0 z-10 transition-opacity duration-300 ${
-                  isAiSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}
-              />
-
-              <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/20 pointer-events-none" />
-            </div>
-
-            {/* PiP USER WEBCAM TILE */}
-            <div className="absolute top-4 right-5 z-20 w-32 h-44 sm:w-36 sm:h-48 rounded-2xl overflow-hidden border-2 border-cyan-500/40 shadow-2xl bg-slate-900 group">
-              {isVideoOff ? (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-400">
-                  <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center font-bold text-white text-lg">
-                    {candidateName.charAt(0)}
-                  </div>
-                  <span className="text-[10px] text-slate-400 mt-2 font-medium">Cam Muted</span>
-                </div>
-              ) : cameraError ? (
-                <div className="w-full h-full flex items-center justify-center p-2 text-center text-rose-400 text-[10px] bg-slate-950">
-                  {cameraError}
-                </div>
-              ) : (
-                <video
-                  ref={userVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover transform -scale-x-100"
+              {/* Avatar View Container (Center Headshot Aspect) */}
+              <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-black">
+                {/* High-res Portrait poster fallback */}
+                <img
+                  src={currentAgent.poster}
+                  alt={currentAgent.name}
+                  className="w-full h-full object-cover object-top absolute inset-0 z-0 brightness-95"
                 />
-              )}
 
-              <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-white border border-slate-700">
-                You
+                {/* Idle Video Stream */}
+                <video
+                  ref={idleVideoRef}
+                  key={`idle-${selectedAgentId}`}
+                  src={currentAgent.idleVideo}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className={`w-full h-full object-cover object-top absolute inset-0 z-10 transition-opacity duration-300 ${
+                    isAiSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                  }`}
+                />
+
+                {/* Talking Video Stream */}
+                <video
+                  ref={talkingVideoRef}
+                  key={`talking-${selectedAgentId}`}
+                  src={currentAgent.talkingVideo}
+                  loop
+                  muted
+                  playsInline
+                  className={`w-full h-full object-cover object-top absolute inset-0 z-10 transition-opacity duration-300 ${
+                    isAiSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                />
+
+                <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/20 pointer-events-none" />
+              </div>
+
+              {/* Speaking Waveform Status Bar */}
+              <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/80 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-800/80">
+                <span className="text-slate-200 font-semibold flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${isAiSpeaking ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-slate-500'}`} />
+                  {isAiSpeaking ? `${currentAgent.name} AI is Articulating` : 'Channel Active'}
+                </span>
+                <div className="flex items-center gap-1 h-3.5">
+                  <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
+                  <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-2 animate-bounce' : 'h-1'}`} />
+                  <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
+                </div>
               </div>
             </div>
 
-            {/* FLOATING IN-CALL CONTROLS */}
-            <div className="absolute bottom-11 z-20 flex items-center gap-3">
-              <button
-                onClick={() => setIsMicMuted(!isMicMuted)}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition shadow-xl border backdrop-blur-md active:scale-95 ${
-                  isMicMuted
-                    ? 'bg-rose-600/90 border-rose-500 text-white shadow-rose-600/30'
-                    : 'bg-slate-900/85 border-slate-700/80 text-white hover:bg-slate-800'
-                }`}
-                title={isMicMuted ? 'Unmute Mic' : 'Mute Mic'}
-              >
-                {isMicMuted ? <MicOff size={18} /> : <Mic size={18} />}
-              </button>
+            {/* TILE 2: CANDIDATE WEBCAM VIDEO (EQUAL 50% PROPORTION) */}
+            <div className="bg-slate-950 border border-slate-800 rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5">
+              <div className="w-full flex justify-between items-center text-xs z-10">
+                <span className="text-[11px] text-slate-300 font-semibold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800 backdrop-blur-md">
+                  Candidate Stream
+                </span>
+                <span className={`text-[10px] px-2.5 py-1 rounded-full border backdrop-blur-md ${
+                  isVideoOff ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                }`}>
+                  {isVideoOff ? 'Camera Off' : 'Camera 720p HD'}
+                </span>
+              </div>
 
-              <button
-                onClick={() => setIsVideoOff(!isVideoOff)}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition shadow-xl border backdrop-blur-md active:scale-95 ${
-                  isVideoOff
-                    ? 'bg-rose-600/90 border-rose-500 text-white shadow-rose-600/30'
-                    : 'bg-slate-900/85 border-slate-700/80 text-white hover:bg-slate-800'
-                }`}
-                title={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}
-              >
-                {isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}
-              </button>
+              <div className="absolute inset-0 z-0">
+                {isVideoOff ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-[#070e24] to-slate-950">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-2xl flex items-center justify-center">
+                      <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
+                        <span className="text-3xl font-black text-white">
+                          {candidateName ? candidateName.charAt(0).toUpperCase() : 'C'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-300 mt-2 font-semibold">{candidateName}</span>
+                    <span className="text-[10px] text-slate-500">Camera feed muted</span>
+                  </div>
+                ) : cameraError ? (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-950 text-amber-400 flex-col gap-1 text-center p-4">
+                    <VideoOff size={28} />
+                    <span className="text-xs">{cameraError}</span>
+                  </div>
+                ) : (
+                  <video
+                    ref={userVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover transform -scale-x-100"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/30 pointer-events-none" />
+              </div>
 
-              <button
-                onClick={() => {
-                  setIsSpeakerMuted(!isSpeakerMuted);
-                  if (!isSpeakerMuted && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                    setIsAiSpeaking(false);
-                  }
-                }}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition shadow-xl border backdrop-blur-md active:scale-95 ${
-                  isSpeakerMuted
-                    ? 'bg-rose-600/90 border-rose-500 text-white shadow-rose-600/30'
-                    : 'bg-slate-900/85 border-slate-700/80 text-white hover:bg-slate-800'
-                }`}
-                title={isSpeakerMuted ? 'Unmute AI Voice' : 'Mute AI Voice'}
-              >
-                {isSpeakerMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-              </button>
-
-              <button
-                onClick={handleEndInterview}
-                className="w-11 h-11 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-xl shadow-rose-600/40 border border-rose-400 active:scale-95"
-                title="End Interview"
-              >
-                <PhoneOff size={18} />
-              </button>
-            </div>
-
-            {/* Speaking Status Waveform Bar */}
-            <div className="absolute bottom-2.5 z-20 flex items-center gap-2 text-xs font-semibold text-slate-200">
-              <span className={isAiSpeaking ? 'text-cyan-400 font-bold' : 'text-slate-400'}>
-                {isAiSpeaking ? `${currentAgent.name} AI is speaking...` : `${currentAgent.name} AI is listening to your answer`}
-              </span>
-              <div className="flex items-center gap-0.5 h-3">
-                <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
-                <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-2 animate-bounce' : 'h-1'}`} />
-                <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
+              <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/80 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-800/80">
+                <span className="text-white font-medium flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${isMicMuted ? 'bg-rose-500' : 'bg-emerald-400'}`} />
+                  {candidateName} (You)
+                </span>
+                <span className={`text-[10px] font-mono ${isMicMuted ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {isMicMuted ? 'Mic Muted' : 'Mic Active'}
+                </span>
               </div>
             </div>
 
+          </div>
+
+          {/* CALL CONTROLS DOCK */}
+          <div className="h-12 bg-slate-950/90 border border-slate-800/80 rounded-2xl px-4 flex items-center justify-center gap-3 shrink-0 shadow-xl">
+            <button
+              onClick={() => setIsMicMuted(!isMicMuted)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition border ${
+                isMicMuted
+                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              {isMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+
+            <button
+              onClick={() => setIsVideoOff(!isVideoOff)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition border ${
+                isVideoOff
+                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              {isVideoOff ? <VideoOff size={16} /> : <Video size={16} />}
+            </button>
+
+            <button
+              onClick={() => {
+                setIsSpeakerMuted(!isSpeakerMuted);
+                if (!isSpeakerMuted && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                  window.speechSynthesis.cancel();
+                  setIsAiSpeaking(false);
+                }
+              }}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition border ${
+                isSpeakerMuted
+                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              {isSpeakerMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+
+            <button
+              onClick={handleEndInterview}
+              className="px-5 h-9 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-2 transition shadow-lg shadow-rose-600/20 ml-2"
+            >
+              <PhoneOff size={15} /> End Interview
+            </button>
           </div>
 
           {/* EXPANDED CANDIDATE SPEECH CAPTURE BOX */}
@@ -700,7 +731,7 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
               <span className="text-[11px] px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
-                Continuous Audio Sync Active
+                Continuous Transcribing Active
               </span>
             </div>
 
@@ -711,7 +742,7 @@ export default function FullLiveInterviewRoom() {
                     <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
                       <MessageSquare size={14} /> Live Spoken Response ({candidateName})
                     </span>
-                    <span className="text-[10px] text-slate-500 font-mono">Real-time Audio Transcriber</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Real-time Audio Sync</span>
                   </div>
                   <div className="min-h-[120px] max-h-[150px] overflow-y-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-100 font-normal leading-relaxed">
                     "{liveAnswer}"
@@ -808,10 +839,10 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* Next Question Button */}
+            {/* Next Question CTA Banner */}
             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 flex items-center justify-between text-white shadow-xl">
               <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION READY</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION GENERATOR</span>
                 <span className="text-xs font-semibold text-white">
                   Question {questionIndex + 1} of {questionsList.length} • Difficulty: Medium → <strong className="text-amber-300">Hard</strong>
                 </span>
