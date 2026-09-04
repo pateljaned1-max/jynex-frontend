@@ -61,8 +61,8 @@ export default function FullLiveInterviewRoom() {
       role: 'Hiring Lead AI',
       gender: 'female' as const,
       poster: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=85',
-      idleVideo: 'https://cdn.pixabay.com/video/2021/08/13/84918-587848480_tiny.mp4',
-      talkingVideo: 'https://cdn.pixabay.com/video/2022/10/18/135502-762299868_tiny.mp4',
+      idleVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
       badgeColor: 'text-amber-300 border-amber-500/30 bg-amber-500/10'
     },
     alex: {
@@ -70,8 +70,8 @@ export default function FullLiveInterviewRoom() {
       role: 'Technical Lead AI',
       gender: 'male' as const,
       poster: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=85',
-      idleVideo: 'https://cdn.pixabay.com/video/2020/05/25/40149-425026210_tiny.mp4',
-      talkingVideo: 'https://cdn.pixabay.com/video/2021/04/12/70868-537482810_tiny.mp4',
+      idleVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
       badgeColor: 'text-cyan-300 border-cyan-500/30 bg-cyan-500/10'
     },
     emma: {
@@ -79,8 +79,8 @@ export default function FullLiveInterviewRoom() {
       role: 'Behavioral AI',
       gender: 'female' as const,
       poster: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=800&q=85',
-      idleVideo: 'https://cdn.pixabay.com/video/2021/08/04/83878-584347714_tiny.mp4',
-      talkingVideo: 'https://cdn.pixabay.com/video/2022/11/04/137691-767789422_tiny.mp4',
+      idleVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
+      talkingVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
       badgeColor: 'text-purple-300 border-purple-500/30 bg-purple-500/10'
     }
   };
@@ -141,11 +141,32 @@ export default function FullLiveInterviewRoom() {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.name) setCandidateName(parsed.name);
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) {}
     }
   }, []);
+
+  // Save Dynamic Session Result to LocalStorage & Navigate (Fixes fallback scoreboard)
+  const handleEndInterview = () => {
+    const finalSessionData = {
+      overallScore: liveAccuracy,
+      technicalScore: liveScores.tech,
+      communicationScore: liveScores.comm,
+      confidenceScore: liveScores.conf,
+      problemSolvingScore: liveScores.prob,
+      fillerCount: liveFiller,
+      wpm: liveWpm,
+      agentUsed: currentAgent.name,
+      agentRole: currentAgent.role,
+      lastAnswer: liveAnswer,
+      keyConcept: currentQ.keyConcept,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('latestInterviewResult', JSON.stringify(finalSessionData));
+    }
+    router.push('/results');
+  };
 
   // Sync Dual Video Streams with isAiSpeaking Flag
   useEffect(() => {
@@ -446,7 +467,7 @@ export default function FullLiveInterviewRoom() {
         </div>
 
         <button
-          onClick={() => router.push('/results')}
+          onClick={handleEndInterview}
           className="bg-rose-600/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 px-4 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-lg shadow-rose-600/10"
         >
           <PhoneOff size={14} /> End Interview
@@ -513,19 +534,19 @@ export default function FullLiveInterviewRoom() {
                     }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-cyan-400 animate-ping' : 'bg-slate-500'}`} />
-                    <span>{agentData.name} ({agentData.gender === 'male' ? 'M' : 'F'})</span>
+                    <span>{agentData.name} ({agentData.gender === 'male' ? 'Male' : 'Female'})</span>
                   </button>
                 );
               })}
             </div>
 
             <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 font-mono pr-2">
-              <span>Persona:</span>
+              <span>Role:</span>
               <span className="text-cyan-300 font-bold">{currentAgent.role}</span>
             </div>
           </div>
 
-          {/* MAIN STAGE VIDEO CALL CONTAINER (IMAGE REPLICA LAYOUT) */}
+          {/* MAIN STAGE VIDEO CALL CONTAINER */}
           <div className="relative w-full h-[375px] bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shrink-0 flex items-center justify-center">
             
             {/* Top Status Pill */}
@@ -544,7 +565,7 @@ export default function FullLiveInterviewRoom() {
                 className="w-full h-full object-cover object-top absolute inset-0 z-0 brightness-95"
               />
 
-              {/* Idle Stream: Natural Head Movement & Eye Blinking */}
+              {/* Idle Stream */}
               <video
                 ref={idleVideoRef}
                 key={`idle-${selectedAgentId}`}
@@ -558,7 +579,7 @@ export default function FullLiveInterviewRoom() {
                 }`}
               />
 
-              {/* Talking Stream: Natural Lip-Sync Motion */}
+              {/* Talking Stream */}
               <video
                 ref={talkingVideoRef}
                 key={`talking-${selectedAgentId}`}
@@ -574,7 +595,7 @@ export default function FullLiveInterviewRoom() {
               <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/20 pointer-events-none" />
             </div>
 
-            {/* PiP USER WEBCAM TILE (Top-Right Overlay) */}
+            {/* PiP USER WEBCAM TILE */}
             <div className="absolute top-4 right-5 z-20 w-32 h-44 sm:w-36 sm:h-48 rounded-2xl overflow-hidden border-2 border-cyan-500/40 shadow-2xl bg-slate-900 group">
               {isVideoOff ? (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-400">
@@ -647,7 +668,7 @@ export default function FullLiveInterviewRoom() {
               </button>
 
               <button
-                onClick={() => router.push('/results')}
+                onClick={handleEndInterview}
                 className="w-11 h-11 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-xl shadow-rose-600/40 border border-rose-400 active:scale-95"
                 title="End Interview"
               >
@@ -679,7 +700,7 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
               <span className="text-[11px] px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
-                Continuous Transcribing Active
+                Continuous Audio Sync Active
               </span>
             </div>
 
@@ -690,7 +711,7 @@ export default function FullLiveInterviewRoom() {
                     <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
                       <MessageSquare size={14} /> Live Spoken Response ({candidateName})
                     </span>
-                    <span className="text-[10px] text-slate-500 font-mono">Real-time Audio Sync</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Real-time Audio Transcriber</span>
                   </div>
                   <div className="min-h-[120px] max-h-[150px] overflow-y-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-100 font-normal leading-relaxed">
                     "{liveAnswer}"
@@ -787,10 +808,10 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* Next Question CTA Banner */}
+            {/* Next Question Button */}
             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 flex items-center justify-between text-white shadow-xl">
               <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION GENERATOR</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION READY</span>
                 <span className="text-xs font-semibold text-white">
                   Question {questionIndex + 1} of {questionsList.length} • Difficulty: Medium → <strong className="text-amber-300">Hard</strong>
                 </span>
