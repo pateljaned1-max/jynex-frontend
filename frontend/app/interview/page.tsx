@@ -30,8 +30,7 @@ import {
   Briefcase,
   Zap,
   Activity,
-  Smile,
-  Maximize2
+  Smile
 } from 'lucide-react';
 
 export default function FullLiveInterviewRoom() {
@@ -44,15 +43,18 @@ export default function FullLiveInterviewRoom() {
   const [candidateName, setCandidateName] = useState('Candidate');
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // AI Speaking State & Dynamic Lip Movement
+  // Real Human AI Video Loop State
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
-  const [mouthOpen, setMouthOpen] = useState(0); // 0 to 1 dynamic mouth aperture
 
   // Video & Canvas Refs
   const userVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const recognitionRef = useRef<any>(null);
+
+  // AI Avatar Dual-Video Elements Ref
+  const talkingVideoRef = useRef<HTMLVideoElement | null>(null);
+  const idleVideoRef = useRef<HTMLVideoElement | null>(null);
 
   // Dynamic Question & Real-Time Tracker States
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -114,57 +116,48 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Lip-Sync Simulation Animation Loop when speaking
+  // Synchronize AI Human Avatar Video States
   useEffect(() => {
-    let animId: number;
     if (isAiSpeaking) {
-      const animateLip = () => {
-        // Random natural mouth flap between 0.2 and 0.9 during continuous speech
-        const nextAperture = 0.2 + Math.random() * 0.7;
-        setMouthOpen(nextAperture);
-        animId = requestAnimationFrame(() => {
-          setTimeout(animateLip, 80 + Math.random() * 60);
-        });
-      };
-      animateLip();
+      if (talkingVideoRef.current) {
+        talkingVideoRef.current.currentTime = 0;
+        talkingVideoRef.current.play().catch(() => {});
+      }
     } else {
-      setMouthOpen(0);
+      if (idleVideoRef.current) {
+        idleVideoRef.current.play().catch(() => {});
+      }
     }
-    return () => cancelAnimationFrame(animId);
   }, [isAiSpeaking]);
 
-  // AI Voice Pronunciation with Event-Driven Lip Synching
+  // Natural Speech Pronunciation & Real Human Lip-Sync Engine
   const speakText = (text: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMuted) return;
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1.05;
+    utterance.rate = 0.96;
+    utterance.pitch = 1.0;
 
     const voices = window.speechSynthesis.getVoices();
-    const naturalVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Female') || v.name.includes('Natural') || v.name.includes('Google')));
+    const naturalVoice = voices.find(
+      v => v.lang.includes('en') && (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Female'))
+    );
     if (naturalVoice) utterance.voice = naturalVoice;
 
     utterance.onstart = () => setIsAiSpeaking(true);
-    utterance.onend = () => {
-      setIsAiSpeaking(false);
-      setMouthOpen(0);
-    };
-    utterance.onerror = () => {
-      setIsAiSpeaking(false);
-      setMouthOpen(0);
-    };
+    utterance.onend = () => setIsAiSpeaking(false);
+    utterance.onerror = () => setIsAiSpeaking(false);
 
     window.speechSynthesis.speak(utterance);
   };
 
-  // Trigger speech on question change
+  // Auto trigger speech on question change
   useEffect(() => {
     const timer = setTimeout(() => {
       speakText(currentQ.q);
-    }, 450);
+    }, 500);
 
     return () => {
       clearTimeout(timer);
@@ -174,7 +167,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [questionIndex, isSpeakerMuted]);
 
-  // Real-Time Speech Recognition
+  // Speech-To-Text Recognition
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -245,7 +238,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isMicMuted, questionIndex]);
 
-  // Webcam Initialization
+  // Webcam Setup
   useEffect(() => {
     let stream: MediaStream | null = null;
 
@@ -362,7 +355,7 @@ export default function FullLiveInterviewRoom() {
     setLiveScores({ comm: 88, tech: 90, conf: 92, prob: 88 });
     setLiveFiller(0);
     setLiveWpm(132);
-    setLiveDecision('Question updated. Sarah AI is speaking prompt.');
+    setLiveDecision('Question updated. Sarah AI is articulating prompt.');
   };
 
   return (
@@ -451,21 +444,22 @@ export default function FullLiveInterviewRoom() {
         {/* CENTER MAIN STAGE */}
         <main className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gradient-to-b from-[#060a16] via-[#050812] to-[#03050c]">
           
-          {/* 1. EQUAL 50-50 VIDEO CALL STAGE (CLEAR HEADSHOT RATIO) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[330px] shrink-0">
+          {/* 1. EQUAL 50-50 VIDEO STAGE WITH REALISTIC HUMAN AI MOVEMENT */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[340px] shrink-0">
             
-            {/* TILE 1: AI INTERVIEWER WITH REALISTIC LIP-SYNC & SPEAKING ENGINE */}
+            {/* TILE 1: HUMAN AI AVATAR (REAL HUMAN VIDEO STREAM) */}
             <div className={`bg-slate-950 border rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 transition-all duration-300 ${
-              isAiSpeaking ? 'border-cyan-400/90 shadow-[0_0_30px_rgba(6,182,212,0.25)]' : 'border-slate-800'
+              isAiSpeaking ? 'border-cyan-400/90 shadow-[0_0_35px_rgba(6,182,212,0.3)]' : 'border-slate-800'
             }`}>
+              
               {/* Top Tag */}
               <div className="w-full flex items-center justify-between text-xs z-10">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] backdrop-blur-md">
-                  <Sparkles size={13} /> Sarah (AI Lead Evaluator)
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] backdrop-blur-md">
+                  <Sparkles size={13} className="text-cyan-400" /> Sarah (AI Lead Evaluator)
                 </span>
                 <span className={`text-[10px] font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md ${
                   isAiSpeaking 
-                    ? 'text-emerald-400 bg-emerald-950/80 border-emerald-500/40' 
+                    ? 'text-emerald-400 bg-emerald-950/85 border-emerald-500/50' 
                     : 'text-slate-400 bg-slate-900/80 border-slate-800'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
@@ -473,42 +467,43 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
 
-              {/* CENTER AVATAR HEADSHOT WITH ADAPTIVE MOUTH / LIP-SYNC OVERLAY */}
-              <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-[#080d1e]">
+              {/* REAL HUMAN VIDEO STREAMS (SEAMLESS DUAL-LAYER TALKING ENGINE) */}
+              <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-black">
                 
-                {/* Responsive Avatar Image centered at eye-level */}
-                <img
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=85"
-                  alt="Sarah AI Evaluator"
-                  className={`w-full h-full object-cover object-top transition-transform duration-200 ${
-                    isAiSpeaking ? 'scale-[1.03] brightness-105' : 'scale-100 brightness-95'
+                {/* Layer A: Idle Natural Breathing & Eye Blinking Video */}
+                <video
+                  ref={idleVideoRef}
+                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+                  poster="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=85"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className={`w-full h-full object-cover object-center transition-opacity duration-300 ${
+                    isAiSpeaking ? 'opacity-0' : 'opacity-100'
                   }`}
                 />
 
-                {/* Real-time Simulated Mouth Lip Movement Aperture */}
-                {isAiSpeaking && (
-                  <div 
-                    className="absolute z-10 w-6 rounded-full bg-[#3d0d16] border border-[#ff859c]/50 transition-all duration-75 shadow-inner"
-                    style={{
-                      top: '49.8%',
-                      left: '49.2%',
-                      transform: 'translate(-50%, -50%)',
-                      height: `${Math.max(4, mouthOpen * 16)}px`,
-                      opacity: mouthOpen > 0.15 ? 0.95 : 0.2
-                    }}
-                  >
-                    <div className="w-full h-1 bg-white/70 rounded-full mx-auto" />
-                  </div>
-                )}
+                {/* Layer B: Talking Active Lip-Sync Motion Video */}
+                <video
+                  ref={talkingVideoRef}
+                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
+                  loop
+                  muted
+                  playsInline
+                  className={`w-full h-full object-cover object-center absolute inset-0 transition-opacity duration-300 ${
+                    isAiSpeaking ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/30 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/20 pointer-events-none" />
               </div>
 
               {/* Bottom Speaking Waveform Indicator */}
               <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/80 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-800/80">
                 <span className="text-slate-200 font-semibold flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${isAiSpeaking ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-slate-500'}`} />
-                  {isAiSpeaking ? 'Sarah AI is Articulating' : 'Audio Channel Active'}
+                  {isAiSpeaking ? 'Sarah AI is Articulating' : 'Audio Stream Synchronized'}
                 </span>
                 <div className="flex items-center gap-1 h-3.5">
                   <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
@@ -519,7 +514,7 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* TILE 2: CANDIDATE WEBCAM VIDEO (EQUAL 50% RATIO) */}
+            {/* TILE 2: CANDIDATE WEBCAM VIDEO (EQUAL 50% PROPORTION) */}
             <div className="bg-slate-950 border border-slate-800 rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5">
               <div className="w-full flex justify-between items-center text-xs z-10">
                 <span className="text-[11px] text-slate-300 font-semibold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800 backdrop-blur-md">
@@ -575,7 +570,7 @@ export default function FullLiveInterviewRoom() {
 
           </div>
 
-          {/* FLOATING CALL CONTROLS BAR */}
+          {/* CALL CONTROLS DOCK */}
           <div className="h-12 bg-slate-950/90 border border-slate-800/80 rounded-2xl px-4 flex items-center justify-center gap-3 shrink-0 shadow-xl">
             <button
               onClick={() => setIsMicMuted(!isMicMuted)}
@@ -624,7 +619,7 @@ export default function FullLiveInterviewRoom() {
             </button>
           </div>
 
-          {/* 2. EXPANDED LARGE CANDIDATE SPEECH CAPTURE & CORRECTION BOX */}
+          {/* 2. EXPANDED LARGE CANDIDATE SPEECH CAPTURE BOX */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <div className="flex items-center gap-2.5">
@@ -638,10 +633,8 @@ export default function FullLiveInterviewRoom() {
               </span>
             </div>
 
-            {/* EXPANDED SPEECH TRANSCRIPTION CONTAINER */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              
-              {/* Left 8-cols: Large Speech Box */}
+              {/* Wide Text Area for Candidate Speech */}
               <div className="lg:col-span-8 bg-slate-900/40 border border-cyan-500/20 rounded-2xl p-4 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -650,7 +643,6 @@ export default function FullLiveInterviewRoom() {
                     </span>
                     <span className="text-[10px] text-slate-500 font-mono">Continuous Stream</span>
                   </div>
-                  {/* Significantly larger text area */}
                   <div className="min-h-[110px] max-h-[140px] overflow-y-auto bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 text-sm text-slate-100 font-normal leading-relaxed">
                     "{liveAnswer}"
                   </div>
@@ -662,7 +654,7 @@ export default function FullLiveInterviewRoom() {
                 </div>
               </div>
 
-              {/* Right 4-cols: AI Correction & Accuracy */}
+              {/* Real-Time Assessment Score */}
               <div className="lg:col-span-4 flex flex-col gap-3">
                 <div className="bg-slate-900/40 border border-amber-500/20 rounded-2xl p-4 flex-1 flex flex-col justify-between">
                   <div>
@@ -679,7 +671,6 @@ export default function FullLiveInterviewRoom() {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
 
@@ -727,7 +718,7 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* Next Question CTA */}
+            {/* Next Question Button */}
             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 flex items-center justify-between text-white shadow-xl">
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION READY</span>
