@@ -42,22 +42,26 @@ export default function FullLiveInterviewRoom() {
   const [candidateName, setCandidateName] = useState('Candidate');
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // AI Speaking State
+  // AI Speaking State & Lip Movement
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
 
-  // Refs
+  // Video & Canvas Refs
   const userVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const avatarCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Dynamic Question & Real-Time Tracker States
+  // Dynamic Question State with Agent Personas & Genders
   const [questionIndex, setQuestionIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(12 * 60 + 45);
 
   const questionsList = [
     {
+      agent: 'Sarah',
+      role: 'Hiring Lead AI',
+      gender: 'female' as const,
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=85',
       q: 'What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?',
       keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
       defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
@@ -67,6 +71,10 @@ export default function FullLiveInterviewRoom() {
       sarahNote: 'Ready for deep architecture questions.'
     },
     {
+      agent: 'Alex',
+      role: 'Technical Lead AI',
+      gender: 'male' as const,
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=85',
       q: 'Can you explain how indexing works in MongoDB and when you should use a compound index?',
       keywords: ['mongodb', 'index', 'b-tree', 'compound', 'query', 'execution', 'performance', 'scan'],
       defaultAnswer: 'MongoDB uses B-trees for indexes. Single field indexes work on one field, while compound indexes index multiple fields to optimize complex queries.',
@@ -76,6 +84,10 @@ export default function FullLiveInterviewRoom() {
       sarahNote: 'Advancing difficulty level to Senior.'
     },
     {
+      agent: 'Emma',
+      role: 'Behavioral & Culture AI',
+      gender: 'female' as const,
+      avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=800&q=85',
       q: 'How do you handle rate limiting in a microservices backend built with Node.js and Redis?',
       keywords: ['redis', 'token bucket', 'rate limit', 'sliding window', 'headers', '429', 'throttle'],
       defaultAnswer: 'I implement a token bucket or sliding window algorithm using Redis to keep a centralized counter per IP or API key.',
@@ -113,7 +125,7 @@ export default function FullLiveInterviewRoom() {
   }, []);
 
   // -------------------------------------------------------------
-  // REAL HUMAN AVATAR LIP-SYNC & FACIAL ANIMATION RENDER ENGINE
+  // DYNAMIC AVATAR & PHONETIC LIP-SYNC CANVAS ENGINE
   // -------------------------------------------------------------
   useEffect(() => {
     const canvas = avatarCanvasRef.current;
@@ -123,7 +135,7 @@ export default function FullLiveInterviewRoom() {
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=85';
+    img.src = currentQ.avatarUrl;
 
     let animFrame: number;
     let tick = 0;
@@ -132,26 +144,24 @@ export default function FullLiveInterviewRoom() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (img.complete && img.naturalWidth > 0) {
-        // Natural micro-breathing head tilt
         const headFloatY = Math.sin(tick * 0.04) * 2;
         const headFloatX = Math.cos(tick * 0.02) * 1.5;
 
-        // Base headshot render
-        ctx.drawImage(img, 0 + headFloatX, 0 + headFloatY, canvas.width, canvas.height);
+        // Base image headshot
+        ctx.drawImage(img, headFloatX, headFloatY, canvas.width, canvas.height);
 
-        // Natural eye-blink cycle every ~4 seconds
-        const blinkCycle = tick % 160;
-        if (blinkCycle > 153 && blinkCycle < 158) {
-          ctx.fillStyle = '#c79a83';
+        // Natural eye-blink cycle
+        const blinkCycle = tick % 150;
+        if (blinkCycle > 143 && blinkCycle < 148) {
+          ctx.fillStyle = currentQ.gender === 'male' ? '#a5735b' : '#c79a83';
           ctx.beginPath();
           ctx.ellipse(canvas.width * 0.44, canvas.height * 0.38 + headFloatY, 11, 4, -0.05, 0, Math.PI * 2);
           ctx.ellipse(canvas.width * 0.58, canvas.height * 0.38 + headFloatY, 11, 4, 0.05, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // REALISTIC LIP DEFORMATION WHEN SPEAKING
+        // Live Real-Time Lip Deformation when AI Speaks
         if (isAiSpeaking) {
-          // Dynamic phonetic mouth movement based on sine harmonics
           const mouthWave = Math.sin(tick * 0.55) * Math.cos(tick * 0.25);
           const mouthOpenHeight = Math.max(1, Math.abs(mouthWave) * 11);
           const mouthWidth = 24 + Math.sin(tick * 0.3) * 4;
@@ -159,13 +169,13 @@ export default function FullLiveInterviewRoom() {
           const mouthX = canvas.width * 0.505 + headFloatX;
           const mouthY = canvas.height * 0.53 + headFloatY;
 
-          // Inner oral cavity depth
+          // Oral cavity depth
           ctx.fillStyle = '#2c0c14';
           ctx.beginPath();
           ctx.ellipse(mouthX, mouthY + mouthOpenHeight * 0.3, mouthWidth / 2, mouthOpenHeight, 0, 0, Math.PI * 2);
           ctx.fill();
 
-          // Upper teeth visibility
+          // Upper teeth
           if (mouthOpenHeight > 3) {
             ctx.fillStyle = '#f8f4f2';
             ctx.beginPath();
@@ -173,8 +183,8 @@ export default function FullLiveInterviewRoom() {
             ctx.fill();
           }
 
-          // Natural lips border blending
-          ctx.strokeStyle = '#b25d6b';
+          // Lips border
+          ctx.strokeStyle = currentQ.gender === 'male' ? '#8c4843' : '#b25d6b';
           ctx.lineWidth = 2.2;
           ctx.beginPath();
           ctx.ellipse(mouthX, mouthY, mouthWidth / 2, mouthOpenHeight + 1, 0, 0, Math.PI * 2);
@@ -191,23 +201,52 @@ export default function FullLiveInterviewRoom() {
     };
 
     return () => cancelAnimationFrame(animFrame);
-  }, [isAiSpeaking]);
+  }, [currentQ.avatarUrl, isAiSpeaking, currentQ.gender]);
 
-  // Voice output synced with speaking flag
-  const speakText = (text: string) => {
+  // -------------------------------------------------------------
+  // DYNAMIC MALE / FEMALE VOICE SELECTION ENGINE
+  // -------------------------------------------------------------
+  const speakText = (text: string, gender: 'male' | 'female' = 'female') => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMuted) return;
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.96;
-    utterance.pitch = 1.02;
-
     const voices = window.speechSynthesis.getVoices();
-    const naturalVoice = voices.find(
-      v => v.lang.includes('en') && (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Female'))
-    );
-    if (naturalVoice) utterance.voice = naturalVoice;
+
+    if (gender === 'male') {
+      // Find English Male Voice
+      const maleVoice = voices.find(
+        (v) =>
+          v.lang.startsWith('en') &&
+          (v.name.toLowerCase().includes('david') ||
+            v.name.toLowerCase().includes('george') ||
+            v.name.toLowerCase().includes('mark') ||
+            v.name.toLowerCase().includes('guy') ||
+            v.name.toLowerCase().includes('james') ||
+            v.name.toLowerCase().includes('male'))
+      );
+
+      if (maleVoice) utterance.voice = maleVoice;
+      utterance.pitch = 0.8; // Deep Male Pitch
+      utterance.rate = 1.0;  // Confident Cadence
+    } else {
+      // Find English Female Voice
+      const femaleVoice = voices.find(
+        (v) =>
+          v.lang.startsWith('en') &&
+          (v.name.toLowerCase().includes('zira') ||
+            v.name.toLowerCase().includes('samantha') ||
+            v.name.toLowerCase().includes('karen') ||
+            v.name.toLowerCase().includes('victoria') ||
+            v.name.toLowerCase().includes('female') ||
+            v.name.toLowerCase().includes('natural'))
+      );
+
+      if (femaleVoice) utterance.voice = femaleVoice;
+      utterance.pitch = 1.15; // Crisp Female Pitch
+      utterance.rate = 0.96;  // Natural Cadence
+    }
 
     utterance.onstart = () => setIsAiSpeaking(true);
     utterance.onend = () => setIsAiSpeaking(false);
@@ -216,10 +255,11 @@ export default function FullLiveInterviewRoom() {
     window.speechSynthesis.speak(utterance);
   };
 
+  // Trigger voice whenever question changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      speakText(currentQ.q);
-    }, 500);
+      speakText(currentQ.q, currentQ.gender);
+    }, 450);
 
     return () => {
       clearTimeout(timer);
@@ -229,7 +269,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [questionIndex, isSpeakerMuted]);
 
-  // Speech-To-Text Recognition
+  // Real-Time Speech Recognition
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -272,11 +312,11 @@ export default function FullLiveInterviewRoom() {
         if (matched.length >= 3) {
           setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Add edge-case considerations to hit 100%.`);
           setLiveGrammar('Sharp & Structured');
-          setLiveDecision('All 3 AI agents approve technical accuracy. Ready to advance difficulty.');
+          setLiveDecision(`All 3 AI agents approve technical accuracy. Advancing challenge.`);
         } else {
           setLiveCorrection(`Try mentioning relevant terms like: ${currentQ.keywords.slice(0, 3).join(', ')}.`);
           setLiveGrammar('Developing Argument');
-          setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
+          setLiveDecision(`Evaluating answer depth... ${currentQ.agent} assessing follow-up clarity.`);
         }
       }
     };
@@ -298,7 +338,7 @@ export default function FullLiveInterviewRoom() {
         recognition.stop();
       } catch (err) {}
     };
-  }, [isMicMuted, questionIndex]);
+  }, [isMicMuted, questionIndex, currentQ]);
 
   // Webcam Setup
   useEffect(() => {
@@ -336,7 +376,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isVideoOff]);
 
-  // Audio Canvas Waveform
+  // Audio Visualizer Waveform
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -417,13 +457,13 @@ export default function FullLiveInterviewRoom() {
     setLiveScores({ comm: 88, tech: 90, conf: 92, prob: 88 });
     setLiveFiller(0);
     setLiveWpm(132);
-    setLiveDecision('Question updated. Sarah AI is speaking prompt.');
+    setLiveDecision(`Question updated. ${nextQData.agent} (${nextQData.role}) is speaking prompt.`);
   };
 
   return (
     <div className="h-screen w-screen bg-[#040711] text-slate-200 font-sans flex flex-col overflow-hidden select-none">
       
-      {/* HEADER */}
+      {/* 1. TOP HEADER */}
       <header className="h-14 border-b border-slate-800/80 bg-[#060a17]/95 px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 group">
@@ -466,7 +506,7 @@ export default function FullLiveInterviewRoom() {
         </button>
       </header>
 
-      {/* MAIN VIEWPORT */}
+      {/* 2. MAIN VIEWPORT */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* LEFT NAV SIDEBAR */}
@@ -506,17 +546,16 @@ export default function FullLiveInterviewRoom() {
         {/* CENTER MAIN STAGE */}
         <main className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gradient-to-b from-[#060a16] via-[#050812] to-[#03050c]">
           
-          {/* 1. EXACT EQUAL 50-50 VIDEO CALL TILES */}
+          {/* EQUAL 50-50 VIDEO CALL TILES */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[330px] shrink-0">
             
-            {/* TILE 1: REALISTIC HUMAN AI AVATAR (LIP-SYNC + EYE BLINK CANVAS) */}
+            {/* TILE 1: DYNAMIC ACTIVE AI AGENT (Male/Female Headshot with Lip Movement) */}
             <div className={`bg-slate-950 border rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 transition-all duration-300 ${
               isAiSpeaking ? 'border-cyan-400/90 shadow-[0_0_35px_rgba(6,182,212,0.3)]' : 'border-slate-800'
             }`}>
-              {/* Top Status */}
               <div className="w-full flex items-center justify-between text-xs z-10">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] backdrop-blur-md">
-                  <Sparkles size={13} className="text-cyan-400" /> Sarah (AI Lead Evaluator)
+                  <Sparkles size={13} className="text-cyan-400" /> {currentQ.agent} ({currentQ.role})
                 </span>
                 <span className={`text-[10px] font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md ${
                   isAiSpeaking 
@@ -528,7 +567,7 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
 
-              {/* Real Human Headshot Canvas with Live Lip-Sync Engine */}
+              {/* Headshot Canvas */}
               <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-[#0a0f22]">
                 <canvas
                   ref={avatarCanvasRef}
@@ -539,11 +578,11 @@ export default function FullLiveInterviewRoom() {
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/20 pointer-events-none" />
               </div>
 
-              {/* Bottom Speaking Bar */}
+              {/* Speaking Bar */}
               <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/80 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-800/80">
                 <span className="text-slate-200 font-semibold flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${isAiSpeaking ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-slate-500'}`} />
-                  {isAiSpeaking ? 'Sarah AI is Articulating' : 'Audio Channel Synchronized'}
+                  {isAiSpeaking ? `${currentQ.agent} AI is Articulating` : 'Channel Active'}
                 </span>
                 <div className="flex items-center gap-1 h-3.5">
                   <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
@@ -659,7 +698,7 @@ export default function FullLiveInterviewRoom() {
             </button>
           </div>
 
-          {/* 2. EXPANDED LARGE CANDIDATE SPEECH CAPTURE BOX */}
+          {/* EXPANDED LARGE CANDIDATE SPEECH CAPTURE BOX */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <div className="flex items-center gap-2.5">
@@ -669,12 +708,12 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
               <span className="text-[11px] px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
-                Continuous Transcriber
+                Continuous Transcriber Active
               </span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              {/* Wide Text Area for Candidate Speech */}
+              {/* Wide Text Area */}
               <div className="lg:col-span-8 bg-slate-900/40 border border-cyan-500/20 rounded-2xl p-4 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -683,7 +722,7 @@ export default function FullLiveInterviewRoom() {
                     </span>
                     <span className="text-[10px] text-slate-500 font-mono">Real-time Audio Sync</span>
                   </div>
-                  <div className="min-h-[110px] max-h-[140px] overflow-y-auto bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 text-sm text-slate-100 font-normal leading-relaxed">
+                  <div className="min-h-[120px] max-h-[150px] overflow-y-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-100 font-normal leading-relaxed">
                     "{liveAnswer}"
                   </div>
                 </div>
@@ -714,7 +753,7 @@ export default function FullLiveInterviewRoom() {
             </div>
           </div>
 
-          {/* 3. AGENT COLLABORATION DECISION WORKFLOW */}
+          {/* AGENT COLLABORATION DECISION WORKFLOW */}
           <div className="bg-slate-900/40 rounded-2xl p-4 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
@@ -727,32 +766,44 @@ export default function FullLiveInterviewRoom() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-slate-950 border border-cyan-500/30 p-3 rounded-xl flex items-start gap-3 shadow-md">
+              <div className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md transition-all ${
+                currentQ.agent === 'Alex' ? 'border-cyan-500 shadow-cyan-500/20 scale-[1.02]' : 'border-slate-800'
+              }`}>
                 <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
                   <Code2 size={15} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">Alex (Tech Lead)</h4>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    Alex (Tech Lead) {currentQ.agent === 'Alex' && <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 rounded">Speaking</span>}
+                  </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.alexNote}</p>
                 </div>
               </div>
 
-              <div className="bg-slate-950 border border-purple-500/30 p-3 rounded-xl flex items-start gap-3 shadow-md">
+              <div className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md transition-all ${
+                currentQ.agent === 'Emma' ? 'border-purple-500 shadow-purple-500/20 scale-[1.02]' : 'border-slate-800'
+              }`}>
                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 mt-0.5">
                   <UserCheck size={15} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">Emma (Behavioral)</h4>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    Emma (Behavioral) {currentQ.agent === 'Emma' && <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 rounded">Speaking</span>}
+                  </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.emmaNote}</p>
                 </div>
               </div>
 
-              <div className="bg-slate-950 border border-amber-500/30 p-3 rounded-xl flex items-start gap-3 shadow-md">
+              <div className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md transition-all ${
+                currentQ.agent === 'Sarah' ? 'border-amber-500 shadow-amber-500/20 scale-[1.02]' : 'border-slate-800'
+              }`}>
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
                   <Briefcase size={15} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">Sarah (Hiring Lead)</h4>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    Sarah (Hiring Lead) {currentQ.agent === 'Sarah' && <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 rounded">Speaking</span>}
+                  </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.sarahNote}</p>
                 </div>
               </div>
