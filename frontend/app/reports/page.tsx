@@ -20,27 +20,32 @@ import {
   ShieldCheck,
   Zap,
   BarChart3,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
+
+interface ReportItem {
+  id: string;
+  date: string;
+  track: string;
+  overallScore: number;
+  status: string;
+  recommendation: string;
+  agents: { alex: number; emma: number; sarah: number };
+  strengths: string[];
+  improvements: string[];
+  duration: string;
+}
 
 export default function ReportsPage() {
   const router = useRouter();
   const [candidateName, setCandidateName] = useState('Candidate');
   const [filterTrack, setFilterTrack] = useState('All');
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('user') || localStorage.getItem('currentUser');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.name) setCandidateName(parsed.name);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
-
-  const reportsList = [
+  const defaultReports: ReportItem[] = [
     {
       id: 'REP-2026-9041',
       date: 'Sep 02, 2026',
@@ -79,9 +84,79 @@ export default function ReportsPage() {
     }
   ];
 
+  const [reportsList, setReportsList] = useState<ReportItem[]>(defaultReports);
+
+  // Load Candidate Profile
+  useEffect(() => {
+    const stored = localStorage.getItem('user') || localStorage.getItem('currentUser');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.name) setCandidateName(parsed.name);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
+  // Fetch Real Reports from Member 1 Backend & MongoDB
+  const fetchReports = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/interview/reports`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const rawReports = Array.isArray(data) ? data : data.reports || [];
+
+        if (rawReports.length > 0) {
+          const normalizedReports: ReportItem[] = rawReports.map((r: any, idx: number) => ({
+            id: r.id || r._id || `REP-2026-${9100 + idx}`,
+            date: r.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            track: r.track || r.role || 'Full-Stack Engineering',
+            overallScore: r.overallScore ?? r.score ?? 88,
+            status: r.status || (r.overallScore >= 90 ? 'Passed - Level 4 Clear' : 'Passed - Level 3 Clear'),
+            recommendation: r.recommendation || (r.overallScore >= 90 ? 'Strong Hire' : 'Hire'),
+            agents: {
+              alex: r.agents?.alex ?? r.technicalScore ?? 90,
+              sarah: r.agents?.sarah ?? r.overallScore ?? 88,
+              emma: r.agents?.emma ?? r.communicationScore ?? 86
+            },
+            strengths: Array.isArray(r.strengths) && r.strengths.length > 0
+              ? r.strengths
+              : ['System Fundamentals', 'Concise Articulation', 'Core Architecture'],
+            improvements: Array.isArray(r.improvements) && r.improvements.length > 0
+              ? r.improvements
+              : ['Explain real-world production tradeoffs', 'Refine pacing latency'],
+            duration: r.duration || '20 mins'
+          }));
+
+          setReportsList(normalizedReports);
+        }
+      }
+    } catch (err) {
+      console.warn('Backend reports offline or warming up. Retaining fallback records:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  // Filtered List by Track
   const filteredReports = filterTrack === 'All' 
     ? reportsList 
-    : reportsList.filter((r) => r.track.includes(filterTrack));
+    : reportsList.filter((r) => r.track.toLowerCase().includes(filterTrack.toLowerCase()));
+
+  // Dynamic Average Calculation
+  const avgAccuracy = reportsList.length > 0 
+    ? (reportsList.reduce((acc, curr) => acc + (curr.overallScore || 0), 0) / reportsList.length).toFixed(1)
+    : '0.0';
 
   const handleDownload = (id: string) => {
     alert(`Downloading Official JYNEX AGENT Verified Report [${id}].pdf`);
@@ -146,21 +221,29 @@ export default function ReportsPage() {
             </div>
             <div className="bg-slate-900/80 border border-slate-800 px-4 py-2 rounded-xl text-center">
               <span className="text-[10px] uppercase font-bold text-slate-500 block">Avg Accuracy</span>
-              <span className="text-xs font-bold text-emerald-400">89.0%</span>
+              <span className="text-xs font-bold text-emerald-400">{avgAccuracy}%</span>
             </div>
+            <button
+              onClick={fetchReports}
+              disabled={isLoading}
+              title="Refresh reports from MongoDB"
+              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-cyan-400 hover:border-slate-700 transition"
+            >
+              <RefreshCw size={15} className={isLoading ? 'animate-spin text-cyan-400' : ''} />
+            </button>
           </div>
         </div>
 
         {/* Filters & Actions Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-950/70 border border-slate-800 p-3 rounded-2xl">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Filter size={15} className="text-slate-400 ml-2" />
-            <span className="text-xs text-slate-400 font-semibold">Filter Track:</span>
+          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+            <Filter size={15} className="text-slate-400 ml-2 shrink-0" />
+            <span className="text-xs text-slate-400 font-semibold shrink-0">Filter Track:</span>
             {['All', 'Full-Stack', 'Microservices', 'Database'].map((track) => (
               <button
                 key={track}
                 onClick={() => setFilterTrack(track)}
-                className={`px-3 py-1 text-xs rounded-lg border transition ${
+                className={`px-3 py-1 text-xs rounded-lg border transition shrink-0 ${
                   filterTrack === track
                     ? 'bg-cyan-600/20 border-cyan-500 text-cyan-300 font-bold'
                     : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
