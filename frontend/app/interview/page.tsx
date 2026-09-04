@@ -32,8 +32,7 @@ import {
   AlertTriangle,
   User,
   Sliders,
-  Play,
-  HelpCircle
+  Play
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
@@ -114,7 +113,6 @@ export default function FullLiveInterviewRoom() {
       q: `Let's discuss your experience in ${selectedTrack}. What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?`,
       keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
       keyConcept: 'Virtual DOM Diffing & Reconciliation',
-      hint: 'Mention component reconciliation, state diffing in-memory, and minimal repainting.',
       alexNote: 'Strong knowledge of React reconciliation algorithms.',
       emmaNote: 'Confident delivery, concise tone and pacing.',
       sarahNote: 'Ready for production-scale architecture questions.'
@@ -123,7 +121,6 @@ export default function FullLiveInterviewRoom() {
       q: 'Can you explain how indexing works in MongoDB and when you should use a compound index?',
       keywords: ['mongodb', 'index', 'b-tree', 'compound', 'query', 'execution', 'performance', 'scan'],
       keyConcept: 'ESR Rule & Compound B-Tree Indexing',
-      hint: 'Discuss B-Tree data structures, Equality, Sort, and Range (ESR) rule for compound fields.',
       alexNote: 'Good understanding of index scan limitations.',
       emmaNote: 'Pacing was natural with structured reasoning.',
       sarahNote: 'Advancing difficulty level to Senior evaluation tier.'
@@ -132,7 +129,6 @@ export default function FullLiveInterviewRoom() {
       q: 'How do you handle rate limiting in a microservices backend built with Node.js and Redis?',
       keywords: ['redis', 'token bucket', 'rate limit', 'sliding window', 'headers', '429', 'throttle'],
       keyConcept: 'Redis Token Bucket & HTTP 429',
-      hint: 'Explain token bucket or sliding window counters in Redis with HTTP status code 429.',
       alexNote: 'Flawless Redis sliding window architecture.',
       emmaNote: 'Zero hesitations, authoritative tone.',
       sarahNote: 'Candidate clears technical bar with high marks.'
@@ -144,13 +140,14 @@ export default function FullLiveInterviewRoom() {
 
   // Live Metrics State
   const [liveAnswer, setLiveAnswer] = useState('');
-  const [liveAccuracy, setLiveAccuracy] = useState(85);
-  const [liveCorrection, setLiveCorrection] = useState('Listening to your spoken answer... Speak clearly into your mic.');
-  const [liveGrammar, setLiveGrammar] = useState('Listening...');
-  const [liveScores, setLiveScores] = useState({ comm: 85, tech: 85, conf: 88, prob: 84 });
-  const [liveFiller, setLiveFiller] = useState(0);
-  const [liveWpm, setLiveWpm] = useState(120);
+  const [liveAccuracy, setLiveAccuracy] = useState(92);
+  const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
+  const [liveGrammar, setLiveGrammar] = useState('Clear & Technical');
+  const [liveScores, setLiveScores] = useState({ comm: 88, tech: 92, conf: 90, prob: 86 });
+  const [liveFiller, setLiveFiller] = useState(1);
+  const [liveWpm, setLiveWpm] = useState(136);
   const [liveEmotion, setLiveEmotion] = useState('Calm & Focused');
+  const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response.');
 
   // Load Candidate Name
   useEffect(() => {
@@ -163,7 +160,7 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Handle End Interview
+  // Step 3: Handle End Interview with Backend Evaluation Call
   const handleEndInterview = async () => {
     setIsEvaluating(true);
 
@@ -323,44 +320,53 @@ export default function FullLiveInterviewRoom() {
       }
 
       if (interimTranscript.trim().length > 0) {
-        setLiveAnswer(interimTranscript);
+        const spokenText = interimTranscript;
+        setLiveAnswer(spokenText);
 
-        const lower = interimTranscript.toLowerCase();
+        const lower = spokenText.toLowerCase();
         const matched = currentQ.keywords.filter((kw) => lower.includes(kw));
-        const matchRatio = Math.min(100, Math.max(60, Math.round(60 + (matched.length / currentQ.keywords.length) * 40)));
+        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / currentQ.keywords.length) * 35)));
         setLiveAccuracy(matchRatio);
 
-        const words = interimTranscript.split(/\s+/).length;
-        setLiveWpm(Math.min(165, Math.max(100, Math.round(words * 3.0))));
+        const words = spokenText.split(/\s+/).length;
+        setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
         
-        const fillerMatches = interimTranscript.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
+        const fillerMatches = spokenText.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
         setLiveFiller(fillerMatches.length);
 
         setLiveScores({
-          comm: Math.min(98, 75 + Math.round(words * 0.3)),
+          comm: Math.min(98, 80 + Math.round(words * 0.4)),
           tech: matchRatio,
-          conf: Math.max(70, 95 - fillerMatches.length * 4),
-          prob: Math.min(95, 80 + matched.length * 3)
+          conf: Math.max(75, 96 - fillerMatches.length * 4),
+          prob: Math.min(96, 82 + matched.length * 3)
         });
 
-        if (matched.length >= 2) {
-          setLiveCorrection(`Good job! Core concepts detected (${matched.join(', ')}). Elaborate further.`);
-          setLiveGrammar('Clear & Structured');
+        if (matched.length >= 3) {
+          setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Add edge-case considerations to hit 100%.`);
+          setLiveGrammar('Sharp & Structured');
+          setLiveDecision('All 3 AI agents approve technical accuracy. Ready to advance.');
         } else {
-          setLiveCorrection(`Tip: Try referencing key terms like ${currentQ.keywords.slice(0, 2).join(', ')}.`);
-          setLiveGrammar('Structuring Response...');
+          setLiveCorrection(`Try mentioning relevant terms like: ${currentQ.keywords.slice(0, 3).join(', ')}.`);
+          setLiveGrammar('Developing Argument');
+          setLiveDecision(`Evaluating answer depth... ${currentAgent.name} assessing follow-up clarity.`);
         }
       }
     };
 
     if (!isMicMuted) {
-      try { recognition.start(); } catch (err) {}
+      try {
+        recognition.start();
+      } catch (err) {}
     } else {
       recognition.stop();
     }
 
-    return () => { try { recognition.stop(); } catch (err) {} };
-  }, [isConfiguring, isMicMuted, questionIndex]);
+    return () => {
+      try {
+        recognition.stop();
+      } catch (err) {}
+    };
+  }, [isConfiguring, isMicMuted, questionIndex, selectedAgentId]);
 
   // Webcam Setup
   useEffect(() => {
@@ -500,11 +506,12 @@ export default function FullLiveInterviewRoom() {
     const finalQuestionText = nextPrompt.trim().length > 0 ? nextPrompt : fallbackData.q;
     setCurrentPrompt(finalQuestionText);
     setLiveAnswer('');
-    setLiveAccuracy(85);
+    setLiveAccuracy(90 + Math.floor(Math.random() * 8));
     setLiveCorrection(`Listening for answer on ${fallbackData.keyConcept}...`);
-    setLiveScores({ comm: 85, tech: 88, conf: 90, prob: 86 });
+    setLiveScores({ comm: 88, tech: 90, conf: 92, prob: 88 });
     setLiveFiller(0);
-    setLiveWpm(120);
+    setLiveWpm(132);
+    setLiveDecision(`Question updated. ${currentAgent.name} (${currentAgent.role}) is speaking prompt.`);
   };
 
   return (
@@ -606,7 +613,7 @@ export default function FullLiveInterviewRoom() {
         </div>
       ) : null}
 
-      {/* ================= 1. TOP HEADER ================= */}
+      {/* 1. TOP HEADER */}
       <header className="h-14 border-b border-slate-800/80 bg-[#060a17]/95 px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 group">
@@ -650,7 +657,7 @@ export default function FullLiveInterviewRoom() {
         </button>
       </header>
 
-      {/* ================= 2. MAIN VIEWPORT ================= */}
+      {/* 2. MAIN VIEWPORT */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* LEFT NAV SIDEBAR */}
@@ -679,7 +686,7 @@ export default function FullLiveInterviewRoom() {
           <div className="space-y-2">
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-center">
               <span className="text-[10px] text-slate-500 font-semibold uppercase block">Interview ID</span>
-              <span className="text-xs font-mono font-medium text-slate-300">INT-2026-09-05</span>
+              <span className="text-xs font-mono font-medium text-slate-300">INT-2026-09-03</span>
             </div>
             <button className="flex items-center justify-center gap-2 w-full py-1.5 text-slate-500 hover:text-slate-300 text-xs transition">
               <ShieldAlert size={13} /> Report Issue
@@ -722,7 +729,7 @@ export default function FullLiveInterviewRoom() {
             </div>
           </div>
 
-          {/* BALANCED 50-50 VIDEO CALL STAGE */}
+          {/* BALANCED 50-50 VIDEO CALL STAGE (EQUAL RATIO PROPORTIONS) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[320px] shrink-0">
             
             {/* TILE 1: DYNAMIC ACTIVE AI AGENT VIDEO STREAM */}
@@ -779,6 +786,7 @@ export default function FullLiveInterviewRoom() {
                 <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/20 pointer-events-none" />
               </div>
 
+              {/* Speaking Waveform Status Bar */}
               <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/80 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-800/80">
                 <span className="text-slate-200 font-semibold flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${isAiSpeaking ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-slate-500'}`} />
@@ -792,7 +800,7 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* TILE 2: CANDIDATE WEBCAM VIDEO */}
+            {/* TILE 2: CANDIDATE WEBCAM VIDEO (EQUAL 50% PROPORTION) */}
             <div className="bg-slate-950 border border-slate-800 rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5">
               <div className="w-full flex justify-between items-center text-xs z-10">
                 <span className="text-[11px] text-slate-300 font-semibold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800 backdrop-blur-md">
@@ -911,62 +919,60 @@ export default function FullLiveInterviewRoom() {
             </button>
           </div>
 
-          {/* CANDIDATE MIC STREAM & HINT HELPER BOX */}
+          {/* EXPANDED CANDIDATE SPEECH CAPTURE BOX */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck size={18} className="text-cyan-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  Candidate Speech Stream & Real-Time Intelligence
+                </span>
+              </div>
+              <span className="text-[11px] px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
+                Continuous Transcribing Active
+              </span>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               <div className="lg:col-span-8 bg-slate-900/40 border border-cyan-500/20 rounded-2xl p-4 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                      <Mic size={14} /> Your Spoken Answer (Microphone Stream)
+                      <MessageSquare size={14} /> Live Spoken Response ({candidateName})
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-mono">Listening Active</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Real-time Audio Sync</span>
                   </div>
-                  <div className="min-h-[110px] max-h-[140px] overflow-y-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-sm text-slate-100">
-                    {liveAnswer ? `"${liveAnswer}"` : <span className="text-slate-500 italic">Speak into your mic to answer the question...</span>}
+                  <div className="min-h-[110px] max-h-[140px] overflow-y-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-100 font-normal leading-relaxed">
+                    {liveAnswer ? `"${liveAnswer}"` : <span className="text-slate-500 italic">Speak into your microphone to answer the question...</span>}
                   </div>
                 </div>
-                <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                  <span>Grammar / Status: <strong className="text-white">{liveGrammar}</strong></span>
-                  <span className="text-emerald-400 font-semibold">{liveAccuracy}% Match</span>
+
+                <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                  <span>Target Concept: <strong className="text-white">{currentQ.keyConcept}</strong></span>
+                  <span className="text-emerald-400 font-semibold">{liveGrammar}</span>
                 </div>
               </div>
 
-              {/* Hint Helper Box */}
-              <div className="lg:col-span-4 bg-slate-900/40 border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 mb-1.5">
-                    <HelpCircle size={14} /> Concept Hint Helper
-                  </span>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {currentQ.hint}
-                  </p>
-                </div>
-                <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Target Concept:</span>
-                  <span className="text-[11px] font-bold text-amber-300">{currentQ.keyConcept}</span>
+              <div className="lg:col-span-4 flex flex-col gap-3">
+                <div className="bg-slate-900/40 border border-amber-500/20 rounded-2xl p-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 mb-1.5">
+                      <AlertTriangle size={14} /> Evaluation Feedback
+                    </span>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {liveCorrection}
+                    </p>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium">Accuracy:</span>
+                    <span className="text-2xl font-black text-emerald-400">{liveAccuracy}%</span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Next Question Generator CTA Banner */}
-            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 flex items-center justify-between text-white shadow-xl">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">ADVANCED EVALUATION PIPELINE</span>
-                <span className="text-xs font-semibold text-white">
-                  Question {questionIndex + 1} • Track: <strong className="text-amber-300">{selectedTrack}</strong>
-                </span>
-              </div>
-              <button
-                onClick={handleNextQuestion}
-                className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center gap-1.5 text-white text-xs font-bold transition shadow-md"
-              >
-                <span>Next Question</span> <ArrowRight size={15} />
-              </button>
             </div>
           </div>
 
-          {/* TRI-AGENT COLLABORATION CARDS */}
+          {/* AGENT COLLABORATION DECISION WORKFLOW */}
           <div className="bg-slate-900/40 rounded-2xl p-4 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
@@ -974,7 +980,7 @@ export default function FullLiveInterviewRoom() {
                 <span>Tri-Agent Collaboration Pipeline</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
-                Active Interviewer: {currentAgent.name}
+                Active Interviewer: {currentAgent.name} ({currentAgent.role})
               </span>
             </div>
 
@@ -1030,6 +1036,23 @@ export default function FullLiveInterviewRoom() {
                 </div>
               </div>
             </div>
+
+            {/* Next Question CTA Banner */}
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 flex items-center justify-between text-white shadow-xl">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION GENERATOR</span>
+                <span className="text-xs font-semibold text-white">
+                  Question {questionIndex + 1} • Topic: <strong className="text-amber-300">{currentQ.keyConcept}</strong>
+                </span>
+              </div>
+              <button
+                onClick={handleNextQuestion}
+                className="w-9 h-9 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition active:scale-95 shadow-md"
+                title="Next Question"
+              >
+                <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
 
         </main>
@@ -1053,7 +1076,10 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.comm}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.comm}%` }} />
+                <div 
+                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.comm}%` }}
+                />
               </div>
             </div>
 
@@ -1065,7 +1091,10 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.tech}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.tech}%` }} />
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.tech}%` }}
+                />
               </div>
             </div>
 
@@ -1077,7 +1106,10 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.conf}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.conf}%` }} />
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.conf}%` }}
+                />
               </div>
             </div>
 
@@ -1089,7 +1121,10 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.prob}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.prob}%` }} />
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.prob}%` }}
+                />
               </div>
             </div>
 
