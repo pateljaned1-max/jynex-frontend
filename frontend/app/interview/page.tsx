@@ -29,7 +29,8 @@ import {
   Zap,
   Activity,
   Smile,
-  AlertTriangle
+  AlertTriangle,
+  User
 } from 'lucide-react';
 
 export default function FullLiveInterviewRoom() {
@@ -42,7 +43,8 @@ export default function FullLiveInterviewRoom() {
   const [candidateName, setCandidateName] = useState('Candidate');
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Real-Time Video Avatar Speaking State
+  // Active AI Agent State
+  const [selectedAgentId, setSelectedAgentId] = useState<'sarah' | 'alex' | 'emma'>('sarah');
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
 
   // Video Refs
@@ -52,46 +54,63 @@ export default function FullLiveInterviewRoom() {
   const idleVideoRef = useRef<HTMLVideoElement | null>(null);
   const talkingVideoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Questions with Assigned Personas
+  // Multi-Agent Profiles with Reliable Cloud Videos & Image Fallbacks
+  const agentsProfile = {
+    sarah: {
+      name: 'Sarah',
+      role: 'Hiring Lead AI',
+      gender: 'female' as const,
+      poster: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=85',
+      idleVideo: 'https://cdn.pixabay.com/video/2021/08/13/84918-587848480_tiny.mp4',
+      talkingVideo: 'https://cdn.pixabay.com/video/2022/10/18/135502-762299868_tiny.mp4',
+      badgeColor: 'text-amber-300 border-amber-500/30 bg-amber-500/10'
+    },
+    alex: {
+      name: 'Alex',
+      role: 'Technical Lead AI',
+      gender: 'male' as const,
+      poster: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=85',
+      idleVideo: 'https://cdn.pixabay.com/video/2020/05/25/40149-425026210_tiny.mp4',
+      talkingVideo: 'https://cdn.pixabay.com/video/2021/04/12/70868-537482810_tiny.mp4',
+      badgeColor: 'text-cyan-300 border-cyan-500/30 bg-cyan-500/10'
+    },
+    emma: {
+      name: 'Emma',
+      role: 'Behavioral AI',
+      gender: 'female' as const,
+      poster: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=800&q=85',
+      idleVideo: 'https://cdn.pixabay.com/video/2021/08/04/83878-584347714_tiny.mp4',
+      talkingVideo: 'https://cdn.pixabay.com/video/2022/11/04/137691-767789422_tiny.mp4',
+      badgeColor: 'text-purple-300 border-purple-500/30 bg-purple-500/10'
+    }
+  };
+
+  const currentAgent = agentsProfile[selectedAgentId];
+
+  // Dynamic Question State
   const [questionIndex, setQuestionIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(12 * 60 + 45);
 
   const questionsList = [
     {
-      agent: 'Sarah',
-      role: 'Hiring Lead AI',
-      gender: 'female' as const,
-      // Verified human portrait talking streams
-      idleVideo: 'https://assets.mixkit.co/videos/preview/mixkit-woman-sitting-in-front-of-a-laptop-42903-large.mp4',
-      talkingVideo: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-talking-on-a-video-call-42898-large.mp4',
       q: 'What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?',
       keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
       defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
       keyConcept: 'Virtual DOM Diffing & Reconciliation',
-      alexNote: 'Strong knowledge of React reconciliation.',
-      emmaNote: 'Confident delivery, concise speech.',
-      sarahNote: 'Ready for deep architecture questions.'
+      alexNote: 'Strong knowledge of React reconciliation algorithms.',
+      emmaNote: 'Confident delivery, concise tone and pacing.',
+      sarahNote: 'Ready for production-scale architecture questions.'
     },
     {
-      agent: 'Alex',
-      role: 'Technical Lead AI',
-      gender: 'male' as const,
-      idleVideo: 'https://assets.mixkit.co/videos/preview/mixkit-man-having-a-video-call-on-his-laptop-42888-large.mp4',
-      talkingVideo: 'https://assets.mixkit.co/videos/preview/mixkit-man-talking-in-front-of-his-laptop-42887-large.mp4',
       q: 'Can you explain how indexing works in MongoDB and when you should use a compound index?',
       keywords: ['mongodb', 'index', 'b-tree', 'compound', 'query', 'execution', 'performance', 'scan'],
       defaultAnswer: 'MongoDB uses B-trees for indexes. Single field indexes work on one field, while compound indexes index multiple fields to optimize complex queries.',
       keyConcept: 'ESR Rule & Compound B-Tree Indexing',
       alexNote: 'Good understanding of index scan limitations.',
-      emmaNote: 'Pacing was natural, structured reasoning.',
-      sarahNote: 'Advancing difficulty level to Senior.'
+      emmaNote: 'Pacing was natural with structured reasoning.',
+      sarahNote: 'Advancing difficulty level to Senior evaluation tier.'
     },
     {
-      agent: 'Emma',
-      role: 'Behavioral AI',
-      gender: 'female' as const,
-      idleVideo: 'https://assets.mixkit.co/videos/preview/mixkit-woman-sitting-in-front-of-a-laptop-42903-large.mp4',
-      talkingVideo: 'https://assets.mixkit.co/videos/preview/mixkit-young-woman-talking-on-a-video-call-42898-large.mp4',
       q: 'How do you handle rate limiting in a microservices backend built with Node.js and Redis?',
       keywords: ['redis', 'token bucket', 'rate limit', 'sliding window', 'headers', '429', 'throttle'],
       defaultAnswer: 'I implement a token bucket or sliding window algorithm using Redis to keep a centralized counter per IP or API key.',
@@ -104,7 +123,7 @@ export default function FullLiveInterviewRoom() {
 
   const currentQ = questionsList[questionIndex];
 
-  // Dynamic Metrics
+  // Live Metrics
   const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
   const [liveAccuracy, setLiveAccuracy] = useState(92);
   const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
@@ -115,7 +134,7 @@ export default function FullLiveInterviewRoom() {
   const [liveEmotion, setLiveEmotion] = useState('Calm & Focused');
   const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response.');
 
-  // Load User
+  // Load Candidate Name
   useEffect(() => {
     const saved = localStorage.getItem('user') || localStorage.getItem('currentUser');
     if (saved) {
@@ -128,7 +147,7 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Seamless Avatar Video Sync
+  // Sync Dual Video Streams with isAiSpeaking Flag
   useEffect(() => {
     if (isAiSpeaking) {
       if (talkingVideoRef.current) {
@@ -140,9 +159,9 @@ export default function FullLiveInterviewRoom() {
         idleVideoRef.current.play().catch(() => {});
       }
     }
-  }, [isAiSpeaking, questionIndex]);
+  }, [isAiSpeaking, selectedAgentId]);
 
-  // Dynamic Voice Selection (Male vs Female)
+  // Gender-Specific Dynamic Voice Engine
   const speakText = (text: string, gender: 'male' | 'female' = 'female') => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMuted) return;
@@ -153,29 +172,30 @@ export default function FullLiveInterviewRoom() {
 
     if (gender === 'male') {
       const maleVoice = voices.find(
-        v => v.lang.startsWith('en') && (
-          v.name.toLowerCase().includes('david') ||
-          v.name.toLowerCase().includes('george') ||
-          v.name.toLowerCase().includes('guy') ||
-          v.name.toLowerCase().includes('james') ||
-          v.name.toLowerCase().includes('male')
-        )
+        (v) =>
+          v.lang.startsWith('en') &&
+          (v.name.toLowerCase().includes('david') ||
+            v.name.toLowerCase().includes('george') ||
+            v.name.toLowerCase().includes('guy') ||
+            v.name.toLowerCase().includes('james') ||
+            v.name.toLowerCase().includes('male'))
       );
       if (maleVoice) utterance.voice = maleVoice;
-      utterance.pitch = 0.82;
+      utterance.pitch = 0.8;
       utterance.rate = 1.0;
     } else {
       const femaleVoice = voices.find(
-        v => v.lang.startsWith('en') && (
-          v.name.toLowerCase().includes('zira') ||
-          v.name.toLowerCase().includes('samantha') ||
-          v.name.toLowerCase().includes('karen') ||
-          v.name.toLowerCase().includes('female') ||
-          v.name.toLowerCase().includes('natural')
-        )
+        (v) =>
+          v.lang.startsWith('en') &&
+          (v.name.toLowerCase().includes('zira') ||
+            v.name.toLowerCase().includes('samantha') ||
+            v.name.toLowerCase().includes('karen') ||
+            v.name.toLowerCase().includes('victoria') ||
+            v.name.toLowerCase().includes('female') ||
+            v.name.toLowerCase().includes('natural'))
       );
       if (femaleVoice) utterance.voice = femaleVoice;
-      utterance.pitch = 1.15;
+      utterance.pitch = selectedAgentId === 'emma' ? 1.18 : 1.05;
       utterance.rate = 0.96;
     }
 
@@ -186,10 +206,10 @@ export default function FullLiveInterviewRoom() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Trigger speech on question change
+  // Trigger speech on question change or agent switch
   useEffect(() => {
     const timer = setTimeout(() => {
-      speakText(currentQ.q, currentQ.gender);
+      speakText(currentQ.q, currentAgent.gender);
     }, 450);
 
     return () => {
@@ -198,7 +218,7 @@ export default function FullLiveInterviewRoom() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [questionIndex, isSpeakerMuted]);
+  }, [questionIndex, selectedAgentId, isSpeakerMuted]);
 
   // Speech-To-Text Recognition
   useEffect(() => {
@@ -243,11 +263,11 @@ export default function FullLiveInterviewRoom() {
         if (matched.length >= 3) {
           setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Add edge-case considerations to hit 100%.`);
           setLiveGrammar('Sharp & Structured');
-          setLiveDecision(`All 3 AI agents approve response. Ready to advance difficulty.`);
+          setLiveDecision(`All 3 AI agents approve technical accuracy. Ready to advance.`);
         } else {
           setLiveCorrection(`Try mentioning relevant terms like: ${currentQ.keywords.slice(0, 3).join(', ')}.`);
           setLiveGrammar('Developing Argument');
-          setLiveDecision(`Evaluating answer depth... ${currentQ.agent} checking clarity.`);
+          setLiveDecision(`Evaluating answer depth... ${currentAgent.name} assessing follow-up clarity.`);
         }
       }
     };
@@ -265,7 +285,7 @@ export default function FullLiveInterviewRoom() {
         recognition.stop();
       } catch (err) {}
     };
-  }, [isMicMuted, questionIndex]);
+  }, [isMicMuted, questionIndex, selectedAgentId]);
 
   // Webcam Setup
   useEffect(() => {
@@ -359,7 +379,7 @@ export default function FullLiveInterviewRoom() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isMicMuted]);
 
-  // Countdown Timer
+  // Timer Countdown
   useEffect(() => {
     const interval = setInterval(() => {
       setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
@@ -384,7 +404,7 @@ export default function FullLiveInterviewRoom() {
     setLiveScores({ comm: 88, tech: 90, conf: 92, prob: 88 });
     setLiveFiller(0);
     setLiveWpm(132);
-    setLiveDecision(`Question updated. ${nextQData.agent} (${nextQData.role}) is speaking.`);
+    setLiveDecision(`Question updated. ${currentAgent.name} (${currentAgent.role}) is speaking prompt.`);
   };
 
   return (
@@ -470,49 +490,88 @@ export default function FullLiveInterviewRoom() {
           </div>
         </aside>
 
-        {/* CENTER MAIN STAGE (EXACT IMAGE REPLICA LAYOUT) */}
+        {/* CENTER MAIN STAGE */}
         <main className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gradient-to-b from-[#060a16] via-[#050812] to-[#03050c]">
           
-          {/* MAIN VIDEO CALL CONTAINER */}
-          <div className="relative w-full h-[370px] bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shrink-0 flex items-center justify-center">
+          {/* INTERACTIVE AGENT CHOICE SELECTOR BAR */}
+          <div className="flex items-center justify-between bg-slate-950/80 border border-slate-800/80 p-2.5 rounded-2xl">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2 flex items-center gap-1.5">
+                <Bot size={14} className="text-cyan-400" /> Active Interviewer:
+              </span>
+              {(['sarah', 'alex', 'emma'] as const).map((agentKey) => {
+                const isSelected = selectedAgentId === agentKey;
+                const agentData = agentsProfile[agentKey];
+                return (
+                  <button
+                    key={agentKey}
+                    onClick={() => setSelectedAgentId(agentKey)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30'
+                        : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-cyan-400 animate-ping' : 'bg-slate-500'}`} />
+                    <span>{agentData.name} ({agentData.gender === 'male' ? 'M' : 'F'})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 font-mono pr-2">
+              <span>Persona:</span>
+              <span className="text-cyan-300 font-bold">{currentAgent.role}</span>
+            </div>
+          </div>
+
+          {/* MAIN STAGE VIDEO CALL CONTAINER (IMAGE REPLICA LAYOUT) */}
+          <div className="relative w-full h-[375px] bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl shrink-0 flex items-center justify-center">
             
             {/* Top Status Pill */}
             <div className="absolute top-4 left-5 z-20 flex items-center gap-2 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700/60 shadow-lg">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]" />
-              <span className="text-xs font-bold text-white tracking-wide">{currentQ.agent} AI • LIVE</span>
+              <span className="text-xs font-bold text-white tracking-wide">{currentAgent.name} AI • LIVE</span>
             </div>
 
-            {/* REAL HUMAN VIDEO AVATAR ENGINE (DUAL LAYER STREAM) */}
+            {/* DYNAMIC REAL HUMAN VIDEO AVATAR ENGINE */}
             <div className="w-full h-full relative flex items-center justify-center overflow-hidden bg-black">
               
-              {/* Idle State: Natural Breaths & Blinking */}
+              {/* Fallback portrait to ensure avatar is NEVER blank */}
+              <img
+                src={currentAgent.poster}
+                alt={currentAgent.name}
+                className="w-full h-full object-cover object-top absolute inset-0 z-0 brightness-95"
+              />
+
+              {/* Idle Stream: Natural Head Movement & Eye Blinking */}
               <video
                 ref={idleVideoRef}
-                key={`idle-${questionIndex}`}
-                src={currentQ.idleVideo}
+                key={`idle-${selectedAgentId}`}
+                src={currentAgent.idleVideo}
                 autoPlay
                 loop
                 muted
                 playsInline
-                className={`w-full h-full object-cover object-top transition-opacity duration-300 ${
-                  isAiSpeaking ? 'opacity-0' : 'opacity-100'
+                className={`w-full h-full object-cover object-top absolute inset-0 z-10 transition-opacity duration-300 ${
+                  isAiSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
               />
 
-              {/* Talking State: Live Natural Lip Movement */}
+              {/* Talking Stream: Natural Lip-Sync Motion */}
               <video
                 ref={talkingVideoRef}
-                key={`talking-${questionIndex}`}
-                src={currentQ.talkingVideo}
+                key={`talking-${selectedAgentId}`}
+                src={currentAgent.talkingVideo}
                 loop
                 muted
                 playsInline
-                className={`w-full h-full object-cover object-top absolute inset-0 transition-opacity duration-300 ${
-                  isAiSpeaking ? 'opacity-100' : 'opacity-0'
+                className={`w-full h-full object-cover object-top absolute inset-0 z-10 transition-opacity duration-300 ${
+                  isAiSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
               />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/20 pointer-events-none" />
+              <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/20 pointer-events-none" />
             </div>
 
             {/* PiP USER WEBCAM TILE (Top-Right Overlay) */}
@@ -543,7 +602,7 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* FLOATING IN-CALL CONTROLS (ROUND PILL DOCK) */}
+            {/* FLOATING IN-CALL CONTROLS */}
             <div className="absolute bottom-11 z-20 flex items-center gap-3">
               <button
                 onClick={() => setIsMicMuted(!isMicMuted)}
@@ -599,7 +658,7 @@ export default function FullLiveInterviewRoom() {
             {/* Speaking Status Waveform Bar */}
             <div className="absolute bottom-2.5 z-20 flex items-center gap-2 text-xs font-semibold text-slate-200">
               <span className={isAiSpeaking ? 'text-cyan-400 font-bold' : 'text-slate-400'}>
-                {isAiSpeaking ? `${currentQ.agent} AI is speaking...` : `${currentQ.agent} AI is listening to your answer`}
+                {isAiSpeaking ? `${currentAgent.name} AI is speaking...` : `${currentAgent.name} AI is listening to your answer`}
               </span>
               <div className="flex items-center gap-0.5 h-3">
                 <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
@@ -620,7 +679,7 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
               <span className="text-[11px] px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
-                Continuous Audio Sync Active
+                Continuous Transcribing Active
               </span>
             </div>
 
@@ -631,7 +690,7 @@ export default function FullLiveInterviewRoom() {
                     <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
                       <MessageSquare size={14} /> Live Spoken Response ({candidateName})
                     </span>
-                    <span className="text-[10px] text-slate-500 font-mono">Transcribing live</span>
+                    <span className="text-[10px] text-slate-500 font-mono">Real-time Audio Sync</span>
                   </div>
                   <div className="min-h-[120px] max-h-[150px] overflow-y-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-100 font-normal leading-relaxed">
                     "{liveAnswer}"
@@ -671,58 +730,67 @@ export default function FullLiveInterviewRoom() {
                 <span>Tri-Agent Collaboration Pipeline</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
-                Active Speaker: {currentQ.agent} ({currentQ.gender})
+                Active Interviewer: {currentAgent.name} ({currentAgent.role})
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md transition-all ${
-                currentQ.agent === 'Alex' ? 'border-cyan-500 shadow-cyan-500/20 scale-[1.02]' : 'border-slate-800'
-              }`}>
+              <div 
+                onClick={() => setSelectedAgentId('alex')}
+                className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md cursor-pointer transition-all ${
+                  selectedAgentId === 'alex' ? 'border-cyan-500 shadow-cyan-500/20 scale-[1.02]' : 'border-slate-800 opacity-80 hover:opacity-100'
+                }`}
+              >
                 <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
                   <Code2 size={15} />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                    Alex (Tech Lead) {currentQ.agent === 'Alex' && <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 rounded">Speaking</span>}
+                    Alex (Tech Lead) {selectedAgentId === 'alex' && <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 rounded">Active</span>}
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.alexNote}</p>
                 </div>
               </div>
 
-              <div className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md transition-all ${
-                currentQ.agent === 'Emma' ? 'border-purple-500 shadow-purple-500/20 scale-[1.02]' : 'border-slate-800'
-              }`}>
+              <div 
+                onClick={() => setSelectedAgentId('emma')}
+                className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md cursor-pointer transition-all ${
+                  selectedAgentId === 'emma' ? 'border-purple-500 shadow-purple-500/20 scale-[1.02]' : 'border-slate-800 opacity-80 hover:opacity-100'
+                }`}
+              >
                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 mt-0.5">
                   <UserCheck size={15} />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                    Emma (Behavioral) {currentQ.agent === 'Emma' && <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 rounded">Speaking</span>}
+                    Emma (Behavioral) {selectedAgentId === 'emma' && <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 rounded">Active</span>}
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.emmaNote}</p>
                 </div>
               </div>
 
-              <div className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md transition-all ${
-                currentQ.agent === 'Sarah' ? 'border-amber-500 shadow-amber-500/20 scale-[1.02]' : 'border-slate-800'
-              }`}>
+              <div 
+                onClick={() => setSelectedAgentId('sarah')}
+                className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md cursor-pointer transition-all ${
+                  selectedAgentId === 'sarah' ? 'border-amber-500 shadow-amber-500/20 scale-[1.02]' : 'border-slate-800 opacity-80 hover:opacity-100'
+                }`}
+              >
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
                   <Briefcase size={15} />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                    Sarah (Hiring Lead) {currentQ.agent === 'Sarah' && <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 rounded">Speaking</span>}
+                    Sarah (Hiring Lead) {selectedAgentId === 'sarah' && <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 rounded">Active</span>}
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.sarahNote}</p>
                 </div>
               </div>
             </div>
 
-            {/* Next Question Button */}
+            {/* Next Question CTA Banner */}
             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 flex items-center justify-between text-white shadow-xl">
               <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION READY</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION GENERATOR</span>
                 <span className="text-xs font-semibold text-white">
                   Question {questionIndex + 1} of {questionsList.length} • Difficulty: Medium → <strong className="text-amber-300">Hard</strong>
                 </span>
@@ -730,6 +798,7 @@ export default function FullLiveInterviewRoom() {
               <button
                 onClick={handleNextQuestion}
                 className="w-9 h-9 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition active:scale-95 shadow-md"
+                title="Next Question"
               >
                 <ArrowRight size={16} />
               </button>
