@@ -16,6 +16,7 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
+  TrendingUp,
   MessageSquare,
   Bot,
   LineChart,
@@ -29,8 +30,10 @@ import {
   Activity,
   Smile,
   AlertTriangle,
+  User,
+  Sliders,
   Play,
-  Sliders
+  HelpCircle
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
@@ -63,7 +66,7 @@ export default function FullLiveInterviewRoom() {
   const idleVideoRef = useRef<HTMLVideoElement | null>(null);
   const talkingVideoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Multi-Agent Profiles
+  // Multi-Agent Profiles with Reliable Cloud Videos & Image Fallbacks
   const agentsProfile = {
     sarah: {
       name: 'Sarah',
@@ -93,26 +96,25 @@ export default function FullLiveInterviewRoom() {
 
   const currentAgent = agentsProfile[selectedAgentId];
 
-  // Question State & Timer
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(selectedDuration * 60);
-
-  // Sync timer when config changes
-  useEffect(() => {
-    setSecondsLeft(selectedDuration * 60);
-  }, [selectedDuration]);
-
   // Sync selectedAgentId with targetAgent chosen in setup
   useEffect(() => {
     setSelectedAgentId(targetAgent);
   }, [targetAgent]);
 
+  // Questions State & Timer
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(selectedDuration * 60);
+
+  useEffect(() => {
+    setSecondsLeft(selectedDuration * 60);
+  }, [selectedDuration]);
+
   const fallbackQuestions = [
     {
       q: `Let's discuss your experience in ${selectedTrack}. What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?`,
       keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
-      defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
       keyConcept: 'Virtual DOM Diffing & Reconciliation',
+      hint: 'Mention component reconciliation, state diffing in-memory, and minimal repainting.',
       alexNote: 'Strong knowledge of React reconciliation algorithms.',
       emmaNote: 'Confident delivery, concise tone and pacing.',
       sarahNote: 'Ready for production-scale architecture questions.'
@@ -120,8 +122,8 @@ export default function FullLiveInterviewRoom() {
     {
       q: 'Can you explain how indexing works in MongoDB and when you should use a compound index?',
       keywords: ['mongodb', 'index', 'b-tree', 'compound', 'query', 'execution', 'performance', 'scan'],
-      defaultAnswer: 'MongoDB uses B-trees for indexes. Single field indexes work on one field, while compound indexes index multiple fields to optimize complex queries.',
       keyConcept: 'ESR Rule & Compound B-Tree Indexing',
+      hint: 'Discuss B-Tree data structures, Equality, Sort, and Range (ESR) rule for compound fields.',
       alexNote: 'Good understanding of index scan limitations.',
       emmaNote: 'Pacing was natural with structured reasoning.',
       sarahNote: 'Advancing difficulty level to Senior evaluation tier.'
@@ -129,8 +131,8 @@ export default function FullLiveInterviewRoom() {
     {
       q: 'How do you handle rate limiting in a microservices backend built with Node.js and Redis?',
       keywords: ['redis', 'token bucket', 'rate limit', 'sliding window', 'headers', '429', 'throttle'],
-      defaultAnswer: 'I implement a token bucket or sliding window algorithm using Redis to keep a centralized counter per IP or API key.',
       keyConcept: 'Redis Token Bucket & HTTP 429',
+      hint: 'Explain token bucket or sliding window counters in Redis with HTTP status code 429.',
       alexNote: 'Flawless Redis sliding window architecture.',
       emmaNote: 'Zero hesitations, authoritative tone.',
       sarahNote: 'Candidate clears technical bar with high marks.'
@@ -141,15 +143,14 @@ export default function FullLiveInterviewRoom() {
   const currentQ = fallbackQuestions[questionIndex % fallbackQuestions.length];
 
   // Live Metrics State
-  const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
-  const [liveAccuracy, setLiveAccuracy] = useState(92);
-  const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
-  const [liveGrammar, setLiveGrammar] = useState('Clear & Technical');
-  const [liveScores, setLiveScores] = useState({ comm: 88, tech: 92, conf: 90, prob: 86 });
-  const [liveFiller, setLiveFiller] = useState(1);
-  const [liveWpm, setLiveWpm] = useState(136);
+  const [liveAnswer, setLiveAnswer] = useState('');
+  const [liveAccuracy, setLiveAccuracy] = useState(85);
+  const [liveCorrection, setLiveCorrection] = useState('Listening to your spoken answer... Speak clearly into your mic.');
+  const [liveGrammar, setLiveGrammar] = useState('Listening...');
+  const [liveScores, setLiveScores] = useState({ comm: 85, tech: 85, conf: 88, prob: 84 });
+  const [liveFiller, setLiveFiller] = useState(0);
+  const [liveWpm, setLiveWpm] = useState(120);
   const [liveEmotion, setLiveEmotion] = useState('Calm & Focused');
-  const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response.');
 
   // Load Candidate Name
   useEffect(() => {
@@ -170,7 +171,7 @@ export default function FullLiveInterviewRoom() {
       candidateName: candidateName || 'Candidate',
       agentName: currentAgent.name,
       track: selectedTrack,
-      transcript: liveAnswer,
+      transcript: liveAnswer || 'No transcript recorded',
       metrics: {
         wpm: liveWpm,
         fillerWords: liveFiller,
@@ -225,7 +226,7 @@ export default function FullLiveInterviewRoom() {
     router.push('/results');
   };
 
-  // Sync Dual Video Streams
+  // Sync Dual Video Streams with isAiSpeaking Flag
   useEffect(() => {
     if (!isConfiguring) {
       if (isAiSpeaking) {
@@ -241,7 +242,7 @@ export default function FullLiveInterviewRoom() {
     }
   }, [isAiSpeaking, selectedAgentId, isConfiguring]);
 
-  // Voice Engine
+  // Gender-Specific Dynamic Voice Engine
   const speakText = (text: string, gender: 'male' | 'female' = 'female') => {
     if (isConfiguring) return;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -287,16 +288,21 @@ export default function FullLiveInterviewRoom() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Trigger speech on config completion
+  // Trigger speech on question change or agent switch
   useEffect(() => {
     if (!isConfiguring) {
       const timer = setTimeout(() => {
         speakText(currentPrompt, currentAgent.gender);
       }, 450);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+      };
     }
-  }, [isConfiguring, currentPrompt, selectedAgentId]);
+  }, [isConfiguring, currentPrompt, selectedAgentId, isSpeakerMuted]);
 
   // Speech-To-Text Recognition
   useEffect(() => {
@@ -317,26 +323,33 @@ export default function FullLiveInterviewRoom() {
       }
 
       if (interimTranscript.trim().length > 0) {
-        const spokenText = interimTranscript;
-        setLiveAnswer(spokenText);
+        setLiveAnswer(interimTranscript);
 
-        const lower = spokenText.toLowerCase();
+        const lower = interimTranscript.toLowerCase();
         const matched = currentQ.keywords.filter((kw) => lower.includes(kw));
-        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / currentQ.keywords.length) * 35)));
+        const matchRatio = Math.min(100, Math.max(60, Math.round(60 + (matched.length / currentQ.keywords.length) * 40)));
         setLiveAccuracy(matchRatio);
 
-        const words = spokenText.split(/\s+/).length;
-        setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
+        const words = interimTranscript.split(/\s+/).length;
+        setLiveWpm(Math.min(165, Math.max(100, Math.round(words * 3.0))));
         
-        const fillerMatches = spokenText.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
+        const fillerMatches = interimTranscript.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
         setLiveFiller(fillerMatches.length);
 
         setLiveScores({
-          comm: Math.min(98, 80 + Math.round(words * 0.4)),
+          comm: Math.min(98, 75 + Math.round(words * 0.3)),
           tech: matchRatio,
-          conf: Math.max(75, 96 - fillerMatches.length * 4),
-          prob: Math.min(96, 82 + matched.length * 3)
+          conf: Math.max(70, 95 - fillerMatches.length * 4),
+          prob: Math.min(95, 80 + matched.length * 3)
         });
+
+        if (matched.length >= 2) {
+          setLiveCorrection(`Good job! Core concepts detected (${matched.join(', ')}). Elaborate further.`);
+          setLiveGrammar('Clear & Structured');
+        } else {
+          setLiveCorrection(`Tip: Try referencing key terms like ${currentQ.keywords.slice(0, 2).join(', ')}.`);
+          setLiveGrammar('Structuring Response...');
+        }
       }
     };
 
@@ -352,11 +365,17 @@ export default function FullLiveInterviewRoom() {
   // Webcam Setup
   useEffect(() => {
     let stream: MediaStream | null = null;
+
     async function startCamera() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 1280, height: 720 },
+          audio: false,
+        });
         mediaStreamRef.current = stream;
-        if (userVideoRef.current) userVideoRef.current.srcObject = stream;
+        if (userVideoRef.current) {
+          userVideoRef.current.srcObject = stream;
+        }
         setCameraError(null);
       } catch (err) {
         setCameraError('Camera access denied');
@@ -367,14 +386,19 @@ export default function FullLiveInterviewRoom() {
       startCamera();
     } else {
       if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
         mediaStreamRef.current = null;
       }
     }
-    return () => { if (stream) stream.getTracks().forEach((t) => t.stop()); };
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
   }, [isVideoOff]);
 
-  // Audio Canvas
+  // Audio Canvas Waveform
   useEffect(() => {
     if (isConfiguring) return;
     const canvas = canvasRef.current;
@@ -387,6 +411,7 @@ export default function FullLiveInterviewRoom() {
 
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       if (isMicMuted) {
         ctx.beginPath();
         ctx.moveTo(0, canvas.height / 2);
@@ -400,6 +425,7 @@ export default function FullLiveInterviewRoom() {
         ctx.strokeStyle = '#06b6d4';
         const height = canvas.height;
         const width = canvas.width;
+
         ctx.moveTo(0, height / 2);
         for (let i = 0; i < width; i++) {
           const wave1 = Math.sin(i * 0.05 + step * 0.1) * 8;
@@ -407,11 +433,25 @@ export default function FullLiveInterviewRoom() {
           ctx.lineTo(i, height / 2 + wave1 + wave2);
         }
         ctx.stroke();
+
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.6)';
+        ctx.moveTo(0, height / 2);
+        for (let i = 0; i < width; i++) {
+          const wave = Math.cos(i * 0.04 + step * 0.08) * 6;
+          ctx.lineTo(i, height / 2 + wave);
+        }
+        ctx.stroke();
+
         step++;
       }
+
       animationFrameId = requestAnimationFrame(render);
     };
+
     render();
+
     return () => cancelAnimationFrame(animationFrameId);
   }, [isConfiguring, isMicMuted]);
 
@@ -430,9 +470,10 @@ export default function FullLiveInterviewRoom() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // Next Question Handler
+  // Step 2: Handle Next Question via Backend Groq Engine
   const handleNextQuestion = async () => {
     let nextPrompt = '';
+
     try {
       const res = await fetch(`${BACKEND_URL}/api/interview/question`, {
         method: 'POST',
@@ -443,28 +484,33 @@ export default function FullLiveInterviewRoom() {
           topic: selectedTrack
         })
       });
+
       if (res.ok) {
         const data = await res.json();
         nextPrompt = data.question || data.text || '';
       }
     } catch (err) {
-      console.warn('Backend question fetch failed:', err);
+      console.warn('Backend question fetch failed, using local cycle:', err);
     }
 
     const nextIdx = (questionIndex + 1) % fallbackQuestions.length;
     setQuestionIndex(nextIdx);
     const fallbackData = fallbackQuestions[nextIdx];
-    const finalQuestionText = nextPrompt.trim().length > 0 ? nextPrompt : fallbackData.q;
 
+    const finalQuestionText = nextPrompt.trim().length > 0 ? nextPrompt : fallbackData.q;
     setCurrentPrompt(finalQuestionText);
-    setLiveAnswer(fallbackData.defaultAnswer);
-    setLiveAccuracy(90 + Math.floor(Math.random() * 8));
+    setLiveAnswer('');
+    setLiveAccuracy(85);
+    setLiveCorrection(`Listening for answer on ${fallbackData.keyConcept}...`);
+    setLiveScores({ comm: 85, tech: 88, conf: 90, prob: 86 });
+    setLiveFiller(0);
+    setLiveWpm(120);
   };
 
   return (
     <div className="h-screen w-screen bg-[#040711] text-slate-200 font-sans flex flex-col overflow-hidden select-none">
       
-      {/* ================= PRE-INTERVIEW SETUP MODAL / SCREEN ================= */}
+      {/* ================= PRE-INTERVIEW SETUP CONFIGURATION MODAL ================= */}
       {isConfiguring ? (
         <div className="absolute inset-0 z-50 bg-[#040711]/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
           <div className="max-w-2xl w-full bg-slate-950 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
@@ -560,7 +606,7 @@ export default function FullLiveInterviewRoom() {
         </div>
       ) : null}
 
-      {/* ================= ACTUAL INTERVIEW ROOM ================= */}
+      {/* ================= 1. TOP HEADER ================= */}
       <header className="h-14 border-b border-slate-800/80 bg-[#060a17]/95 px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 group">
@@ -571,10 +617,12 @@ export default function FullLiveInterviewRoom() {
               JYNEX <span className="text-cyan-400">AGENT</span>
             </span>
           </Link>
+
           <div className="h-4 w-[1px] bg-slate-800" />
+
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-            {selectedTrack.split(' ')[0]} ({selectedDuration}m)
+            Live • {selectedTrack.split(' ')[0]} ({selectedDuration}m)
           </div>
         </div>
 
@@ -584,6 +632,12 @@ export default function FullLiveInterviewRoom() {
             <Clock size={15} className="text-cyan-400" />
             <span className="font-bold text-white tracking-wider">{formatTimer(secondsLeft)}</span>
             <span className="text-xs text-slate-500">Remaining</span>
+          </div>
+
+          <div className="flex items-center gap-1 h-5 px-2">
+            <div className={`w-1 bg-cyan-400 rounded-full ${isAiSpeaking ? 'h-5 animate-pulse' : 'h-2'}`} />
+            <div className={`w-1 bg-purple-400 rounded-full ${isAiSpeaking ? 'h-4 animate-bounce' : 'h-3'}`} />
+            <div className={`w-1 bg-blue-400 rounded-full ${isAiSpeaking ? 'h-5 animate-pulse' : 'h-1.5'}`} />
           </div>
         </div>
 
@@ -596,9 +650,10 @@ export default function FullLiveInterviewRoom() {
         </button>
       </header>
 
+      {/* ================= 2. MAIN VIEWPORT ================= */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* Left Nav */}
+        {/* LEFT NAV SIDEBAR */}
         <aside className="w-52 border-r border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 hidden lg:flex">
           <nav className="space-y-1.5">
             <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
@@ -610,16 +665,32 @@ export default function FullLiveInterviewRoom() {
             <Link href="/agents" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
               <Bot size={15} /> AI Agents
             </Link>
+            <Link href="/results" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
+              <LineChart size={15} /> Analysis
+            </Link>
             <Link href="/reports" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
               <FileText size={15} /> Reports
             </Link>
+            <Link href="/profile" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
+              <Settings size={15} /> Settings
+            </Link>
           </nav>
+
+          <div className="space-y-2">
+            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 text-center">
+              <span className="text-[10px] text-slate-500 font-semibold uppercase block">Interview ID</span>
+              <span className="text-xs font-mono font-medium text-slate-300">INT-2026-09-05</span>
+            </div>
+            <button className="flex items-center justify-center gap-2 w-full py-1.5 text-slate-500 hover:text-slate-300 text-xs transition">
+              <ShieldAlert size={13} /> Report Issue
+            </button>
+          </div>
         </aside>
 
-        {/* Main Stage */}
+        {/* CENTER MAIN STAGE */}
         <main className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gradient-to-b from-[#060a16] via-[#050812] to-[#03050c]">
           
-          {/* Agent Switcher Bar */}
+          {/* INTERACTIVE AGENT CHOICE SELECTOR BAR */}
           <div className="flex items-center justify-between bg-slate-950/80 border border-slate-800/80 p-2.5 rounded-2xl">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2 flex items-center gap-1.5">
@@ -634,97 +705,427 @@ export default function FullLiveInterviewRoom() {
                     onClick={() => setSelectedAgentId(agentKey)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition ${
                       isSelected
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-indigo-400 text-white shadow-lg'
-                        : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30'
+                        : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                     }`}
                   >
-                    <span>{agentData.name} ({agentData.role})</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-cyan-400 animate-ping' : 'bg-slate-500'}`} />
+                    <span>{agentData.name} ({agentData.gender === 'male' ? 'Male' : 'Female'})</span>
                   </button>
                 );
               })}
             </div>
+
+            <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 font-mono pr-2">
+              <span>Role:</span>
+              <span className="text-cyan-300 font-bold">{currentAgent.role}</span>
+            </div>
           </div>
 
-          {/* Videos 50-50 Stage */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[340px] shrink-0">
-            {/* AI Agent Stream */}
-            <div className={`bg-slate-950 border rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 transition-all ${
+          {/* BALANCED 50-50 VIDEO CALL STAGE */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[320px] shrink-0">
+            
+            {/* TILE 1: DYNAMIC ACTIVE AI AGENT VIDEO STREAM */}
+            <div className={`bg-slate-950 border rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 transition-all duration-300 ${
               isAiSpeaking ? 'border-cyan-400/90 shadow-[0_0_35px_rgba(6,182,212,0.3)]' : 'border-slate-800'
             }`}>
               <div className="w-full flex items-center justify-between text-xs z-10">
-                <span className="px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px]">
-                  <Sparkles size={13} className="inline text-cyan-400 mr-1" /> {currentAgent.name} ({currentAgent.role})
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] backdrop-blur-md">
+                  <Sparkles size={13} className="text-cyan-400" /> {currentAgent.name} ({currentAgent.role})
+                </span>
+                <span className={`text-[10px] font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-full border backdrop-blur-md ${
+                  isAiSpeaking 
+                    ? 'text-emerald-400 bg-emerald-950/85 border-emerald-500/50' 
+                    : 'text-slate-400 bg-slate-900/80 border-slate-800'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
+                  {isAiSpeaking ? 'Speaking Live...' : 'Listening'}
                 </span>
               </div>
+
+              {/* Avatar View Container */}
               <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden bg-black">
-                <img src={currentAgent.poster} alt={currentAgent.name} className="w-full h-full object-cover object-top absolute inset-0 z-0" />
-                <video ref={idleVideoRef} src={currentAgent.idleVideo} autoPlay loop muted playsInline className={`w-full h-full object-cover absolute inset-0 z-10 ${isAiSpeaking ? 'opacity-0' : 'opacity-100'}`} />
-                <video ref={talkingVideoRef} src={currentAgent.talkingVideo} loop muted playsInline className={`w-full h-full object-cover absolute inset-0 z-10 ${isAiSpeaking ? 'opacity-100' : 'opacity-0'}`} />
+                <img
+                  src={currentAgent.poster}
+                  alt={currentAgent.name}
+                  className="w-full h-full object-cover object-top absolute inset-0 z-0 brightness-95"
+                />
+
+                <video
+                  ref={idleVideoRef}
+                  key={`idle-${selectedAgentId}`}
+                  src={currentAgent.idleVideo}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className={`w-full h-full object-cover object-top absolute inset-0 z-10 transition-opacity duration-300 ${
+                    isAiSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                  }`}
+                />
+
+                <video
+                  ref={talkingVideoRef}
+                  key={`talking-${selectedAgentId}`}
+                  src={currentAgent.talkingVideo}
+                  loop
+                  muted
+                  playsInline
+                  className={`w-full h-full object-cover object-top absolute inset-0 z-10 transition-opacity duration-300 ${
+                    isAiSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                />
+
+                <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/20 pointer-events-none" />
+              </div>
+
+              <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/80 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-800/80">
+                <span className="text-slate-200 font-semibold flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${isAiSpeaking ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-slate-500'}`} />
+                  {isAiSpeaking ? `${currentAgent.name} AI is Articulating` : 'Channel Active'}
+                </span>
+                <div className="flex items-center gap-1 h-3.5">
+                  <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
+                  <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-2 animate-bounce' : 'h-1'}`} />
+                  <span className={`w-0.5 bg-cyan-400 rounded-full transition-all ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
+                </div>
               </div>
             </div>
 
-            {/* Candidate Stream */}
+            {/* TILE 2: CANDIDATE WEBCAM VIDEO */}
             <div className="bg-slate-950 border border-slate-800 rounded-3xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5">
               <div className="w-full flex justify-between items-center text-xs z-10">
-                <span className="text-[11px] text-slate-300 font-semibold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800">
+                <span className="text-[11px] text-slate-300 font-semibold bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800 backdrop-blur-md">
                   Candidate Stream
                 </span>
+                <span className={`text-[10px] px-2.5 py-1 rounded-full border backdrop-blur-md ${
+                  isVideoOff ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                }`}>
+                  {isVideoOff ? 'Camera Off' : 'Camera 720p HD'}
+                </span>
               </div>
+
               <div className="absolute inset-0 z-0">
                 {isVideoOff ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-300">
-                    <span className="text-3xl font-black">{candidateName.charAt(0)}</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-[#070e24] to-slate-950">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-2xl flex items-center justify-center">
+                      <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
+                        <span className="text-3xl font-black text-white">
+                          {candidateName ? candidateName.charAt(0).toUpperCase() : 'C'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-300 mt-2 font-semibold">{candidateName}</span>
+                    <span className="text-[10px] text-slate-500">Camera feed muted</span>
+                  </div>
+                ) : cameraError ? (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-950 text-amber-400 flex-col gap-1 text-center p-4">
+                    <VideoOff size={28} />
+                    <span className="text-xs">{cameraError}</span>
                   </div>
                 ) : (
-                  <video ref={userVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
+                  <video
+                    ref={userVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover transform -scale-x-100"
+                  />
                 )}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/30 pointer-events-none" />
+              </div>
+
+              <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/80 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-800/80">
+                <span className="text-white font-medium flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${isMicMuted ? 'bg-rose-500' : 'bg-emerald-400'}`} />
+                  {candidateName} (You)
+                </span>
+                <span className={`text-[10px] font-mono ${isMicMuted ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {isMicMuted ? 'Mic Muted' : 'Mic Active'}
+                </span>
               </div>
             </div>
+
           </div>
 
-          {/* Controls Dock */}
-          <div className="h-12 bg-slate-950/90 border border-slate-800 rounded-2xl px-4 flex items-center justify-center gap-3 shrink-0 shadow-xl">
-            <button onClick={() => setIsMicMuted(!isMicMuted)} className={`w-9 h-9 rounded-xl flex items-center justify-center border ${isMicMuted ? 'bg-rose-600 text-white' : 'bg-slate-900 text-slate-300'}`}>
+          {/* AI SPOKEN SUBTITLES BOX */}
+          <div className="bg-slate-950/90 border border-cyan-500/30 rounded-2xl p-4 shadow-xl space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                <MessageSquare size={14} /> AI Spoken Question Subtitles
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Question {questionIndex + 1}</span>
+            </div>
+            <div className="text-sm font-medium text-white leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+              "{currentPrompt}"
+            </div>
+          </div>
+
+          {/* CALL CONTROLS DOCK */}
+          <div className="h-12 bg-slate-950/90 border border-slate-800/80 rounded-2xl px-4 flex items-center justify-center gap-3 shrink-0 shadow-xl">
+            <button
+              onClick={() => setIsMicMuted(!isMicMuted)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition border ${
+                isMicMuted
+                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
               {isMicMuted ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
-            <button onClick={() => setIsVideoOff(!isVideoOff)} className={`w-9 h-9 rounded-xl flex items-center justify-center border ${isVideoOff ? 'bg-rose-600 text-white' : 'bg-slate-900 text-slate-300'}`}>
+
+            <button
+              onClick={() => setIsVideoOff(!isVideoOff)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition border ${
+                isVideoOff
+                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
               {isVideoOff ? <VideoOff size={16} /> : <Video size={16} />}
             </button>
-            <button onClick={handleEndInterview} disabled={isEvaluating} className="px-5 h-9 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-2">
-              <PhoneOff size={15} /> End Interview
+
+            <button
+              onClick={() => {
+                setIsSpeakerMuted(!isSpeakerMuted);
+                if (!isSpeakerMuted && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                  window.speechSynthesis.cancel();
+                  setIsAiSpeaking(false);
+                }
+              }}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition border ${
+                isSpeakerMuted
+                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              {isSpeakerMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+
+            <button
+              onClick={handleEndInterview}
+              disabled={isEvaluating}
+              className="px-5 h-9 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-2 transition shadow-lg shadow-rose-600/20 ml-2 disabled:opacity-50"
+            >
+              <PhoneOff size={15} /> {isEvaluating ? 'Evaluating...' : 'End Interview'}
             </button>
           </div>
 
-          {/* Transcript & Next Question */}
+          {/* CANDIDATE MIC STREAM & HINT HELPER BOX */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xl">
-            <div className="min-h-[100px] bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-sm text-slate-100">
-              "{liveAnswer}"
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-8 bg-slate-900/40 border border-cyan-500/20 rounded-2xl p-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                      <Mic size={14} /> Your Spoken Answer (Microphone Stream)
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-mono">Listening Active</span>
+                  </div>
+                  <div className="min-h-[110px] max-h-[140px] overflow-y-auto bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-sm text-slate-100">
+                    {liveAnswer ? `"${liveAnswer}"` : <span className="text-slate-500 italic">Speak into your mic to answer the question...</span>}
+                  </div>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                  <span>Grammar / Status: <strong className="text-white">{liveGrammar}</strong></span>
+                  <span className="text-emerald-400 font-semibold">{liveAccuracy}% Match</span>
+                </div>
+              </div>
+
+              {/* Hint Helper Box */}
+              <div className="lg:col-span-4 bg-slate-900/40 border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 mb-1.5">
+                    <HelpCircle size={14} /> Concept Hint Helper
+                  </span>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {currentQ.hint}
+                  </p>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Target Concept:</span>
+                  <span className="text-[11px] font-bold text-amber-300">{currentQ.keyConcept}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 text-white">
-              <span className="text-xs font-semibold">Track: {selectedTrack}</span>
-              <button onClick={handleNextQuestion} className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
-                <ArrowRight size={16} />
+
+            {/* Next Question Generator CTA Banner */}
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 flex items-center justify-between text-white shadow-xl">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">ADVANCED EVALUATION PIPELINE</span>
+                <span className="text-xs font-semibold text-white">
+                  Question {questionIndex + 1} • Track: <strong className="text-amber-300">{selectedTrack}</strong>
+                </span>
+              </div>
+              <button
+                onClick={handleNextQuestion}
+                className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center gap-1.5 text-white text-xs font-bold transition shadow-md"
+              >
+                <span>Next Question</span> <ArrowRight size={15} />
               </button>
+            </div>
+          </div>
+
+          {/* TRI-AGENT COLLABORATION CARDS */}
+          <div className="bg-slate-900/40 rounded-2xl p-4 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
+                <Zap size={14} className="text-purple-400" />
+                <span>Tri-Agent Collaboration Pipeline</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
+                Active Interviewer: {currentAgent.name}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div 
+                onClick={() => setSelectedAgentId('alex')}
+                className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md cursor-pointer transition-all ${
+                  selectedAgentId === 'alex' ? 'border-cyan-500 shadow-cyan-500/20 scale-[1.02]' : 'border-slate-800 opacity-80 hover:opacity-100'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                  <Code2 size={15} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    Alex (Tech Lead) {selectedAgentId === 'alex' && <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 rounded">Active</span>}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.alexNote}</p>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => setSelectedAgentId('emma')}
+                className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md cursor-pointer transition-all ${
+                  selectedAgentId === 'emma' ? 'border-purple-500 shadow-purple-500/20 scale-[1.02]' : 'border-slate-800 opacity-80 hover:opacity-100'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 mt-0.5">
+                  <UserCheck size={15} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    Emma (Behavioral) {selectedAgentId === 'emma' && <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 rounded">Active</span>}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.emmaNote}</p>
+                </div>
+              </div>
+
+              <div 
+                onClick={() => setSelectedAgentId('sarah')}
+                className={`bg-slate-950 border p-3 rounded-xl flex items-start gap-3 shadow-md cursor-pointer transition-all ${
+                  selectedAgentId === 'sarah' ? 'border-amber-500 shadow-amber-500/20 scale-[1.02]' : 'border-slate-800 opacity-80 hover:opacity-100'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
+                  <Briefcase size={15} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    Sarah (Hiring Lead) {selectedAgentId === 'sarah' && <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 rounded">Active</span>}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.sarahNote}</p>
+                </div>
+              </div>
             </div>
           </div>
 
         </main>
 
-        {/* Right Sidebar Metrics */}
-        <aside className="w-80 border-l border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 hidden xl:flex">
+        {/* RIGHT METRICS SIDEBAR */}
+        <aside className="w-80 border-l border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 overflow-y-auto hidden xl:flex space-y-4">
+          
           <div className="space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <Activity size={14} className="text-cyan-400" /> Live Analysis
-            </span>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between"><span>Communication:</span><span className="font-bold text-white">{liveScores.comm}%</span></div>
-              <div className="flex justify-between"><span>Technical:</span><span className="font-bold text-white">{liveScores.tech}%</span></div>
-              <div className="flex justify-between"><span>Confidence:</span><span className="font-bold text-white">{liveScores.conf}%</span></div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <Activity size={14} className="text-cyan-400" /> Live Dynamic Analysis
+              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </div>
-            <div className="pt-4 border-t border-slate-800">
-              <canvas ref={canvasRef} width={260} height={36} className="w-full h-9 bg-slate-950 rounded-xl border border-slate-800" />
+
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <MessageSquare size={13} className="text-cyan-400" /> Communication
+                </span>
+                <span className="font-bold text-white">{liveScores.comm}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.comm}%` }} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Code2 size={13} className="text-blue-400" /> Technical Skills
+                </span>
+                <span className="font-bold text-white">{liveScores.tech}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.tech}%` }} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-purple-400" /> Confidence
+                </span>
+                <span className="font-bold text-white">{liveScores.conf}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.conf}%` }} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Zap size={13} className="text-amber-400" /> Problem Solving
+                </span>
+                <span className="font-bold text-white">{liveScores.prob}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.prob}%` }} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 uppercase block font-semibold">Filler Words</span>
+                <span className="text-sm font-bold text-white">~ {liveFiller}</span>
+              </div>
+              <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 uppercase block font-semibold">Speaking Pace</span>
+                <span className="text-sm font-bold text-white">~ {liveWpm} WPM</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
+              <span className="text-xs text-slate-400 font-medium">Emotion Status</span>
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                <Smile size={14} /> {liveEmotion}
+              </span>
             </div>
           </div>
+
+          {/* SINE WAVE */}
+          <div className="space-y-2 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300">
+              <span className="flex items-center gap-1.5"><Mic size={14} className="text-cyan-400" /> Voice Activity</span>
+              <span className={`text-[10px] ${isMicMuted ? 'text-rose-400' : 'text-cyan-400'}`}>
+                {isMicMuted ? 'Muted' : 'Listening...'}
+              </span>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl flex flex-col items-center justify-center">
+              <canvas ref={canvasRef} width={260} height={36} className="w-full h-9" />
+            </div>
+          </div>
+
         </aside>
 
       </div>
