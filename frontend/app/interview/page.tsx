@@ -169,11 +169,13 @@ export default function FullLiveInterviewRoom() {
         const spokenText = interimTranscript;
         setLiveAnswer(spokenText);
 
+        // Calculate dynamic real-time accuracy based on keyword hit rate
         const lower = spokenText.toLowerCase();
         const matched = currentQ.keywords.filter((kw) => lower.includes(kw));
         const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / currentQ.keywords.length) * 35)));
         setLiveAccuracy(matchRatio);
 
+        // Update live metrics dynamically
         const words = spokenText.split(/\s+/).length;
         setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
         
@@ -330,6 +332,7 @@ export default function FullLiveInterviewRoom() {
     setQuestionIndex(nextIdx);
     const nextQData = questionsList[nextIdx];
     
+    // Dynamically reset tracker data for next round
     setLiveAnswer(nextQData.defaultAnswer);
     setLiveAccuracy(90 + Math.floor(Math.random() * 8));
     setLiveCorrection(`Listening for answer on ${nextQData.keyConcept}...`);
@@ -345,11 +348,11 @@ export default function FullLiveInterviewRoom() {
       {/* HEADER */}
       <header className="h-14 border-b border-slate-800/80 bg-[#060a17]/95 px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-base shadow-lg shadow-cyan-500/20">
               <Sparkles size={16} />
             </div>
-            <span className="font-extrabold text-lg tracking-wider text-white uppercase">
+            <span className="font-extrabold text-lg tracking-tight text-white uppercase">
               JYNEX <span className="text-cyan-400">AGENT</span>
             </span>
           </Link>
@@ -388,7 +391,7 @@ export default function FullLiveInterviewRoom() {
       {/* MAIN VIEWPORT */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* LEFT NAV SIDEBAR (AI Agents & Reports routes fully integrated) */}
+        {/* LEFT NAV SIDEBAR (Linked to /agents and /reports) */}
         <aside className="w-52 border-r border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 hidden lg:flex">
           <nav className="space-y-1.5">
             <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
