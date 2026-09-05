@@ -134,7 +134,7 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Agora Real-Time Voice Session Function with Dynamic Client-Side Import
+  // Agora Real-Time Voice Session Function (Step 1 Fixed: Passing data.token and UID 0)
   const startAgoraCall = async (targetChannel: string) => {
     let client: any = null;
     let audioTrack: any = null;
@@ -150,13 +150,13 @@ export default function FullLiveInterviewRoom() {
       });
       
       if (!tokenRes.ok) throw new Error('Failed to fetch Agora token');
-      const { token, app_id } = await tokenRes.json();
+      const data = await tokenRes.json();
 
-      // 2. Create Agora client and join channel
+      // 2. Create Agora client and join channel using data.token and UID 0
       client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       setAgoraClient(client);
 
-      await client.join(app_id, targetChannel, token, null);
+      await client.join(data.app_id, targetChannel, data.token, 0);
 
       // 3. Create and publish local microphone audio track
       audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
@@ -164,12 +164,19 @@ export default function FullLiveInterviewRoom() {
       await client.publish([audioTrack]);
       setIsAgoraConnected(true);
 
-      // 4. Trigger backend to bring AI Agent into the channel
-      await fetch(`${BACKEND_URL}/api/agora/start-agent`, {
+      // 4. Trigger backend to bring AI Agent into the channel and store agent_id
+      const agentRes = await fetch(`${BACKEND_URL}/api/agora/start-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channel_name: targetChannel, persona: targetAgent })
       });
+
+      if (agentRes.ok) {
+        const agentData = await agentRes.json();
+        if (agentData.agent_id) {
+          localStorage.setItem('active_agent_id', agentData.agent_id);
+        }
+      }
 
       // 5. Subscribe to incoming AI Agent audio stream automatically via VAD
       client.on('user-published', async (user: any, mediaType: string) => {
@@ -402,7 +409,7 @@ export default function FullLiveInterviewRoom() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // Handle End Call & Cleanup Agora session
+  // Handle End Call & Cleanup Agora session (Step 2 Fixed: Passing agent_id in stop-agent body)
   const handleEndCall = async () => {
     if (localAudioTrack) {
       localAudioTrack.close();
@@ -410,14 +417,19 @@ export default function FullLiveInterviewRoom() {
     if (agoraClient) {
       await agoraClient.leave();
     }
-    if (channelName) {
+    
+    const agentId = localStorage.getItem('active_agent_id');
+    if (agentId) {
       try {
         await fetch(`${BACKEND_URL}/api/agora/stop-agent`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ channel_name: channelName })
+          body: JSON.stringify({ agent_id: agentId })
         });
-      } catch (e) {}
+        localStorage.removeItem('active_agent_id');
+      } catch (e) {
+        console.error('Error stopping agent:', e);
+      }
     }
     router.push('/results');
   };
