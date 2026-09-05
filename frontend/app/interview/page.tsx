@@ -18,7 +18,6 @@ import {
   HelpCircle,
   Clock,
   Sparkles,
-  ArrowRight,
   ShieldCheck,
   TrendingUp,
   MessageSquare,
@@ -122,7 +121,7 @@ export default function FullLiveInterviewRoom() {
   const [liveFiller, setLiveFiller] = useState(1);
   const [liveWpm, setLiveWpm] = useState(136);
   const [liveEmotion, setLiveEmotion] = useState('Calm & Focused');
-  const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response.');
+  const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response via Agora VAD loop.');
 
   // Load Candidate Name
   useEffect(() => {
@@ -172,7 +171,7 @@ export default function FullLiveInterviewRoom() {
         body: JSON.stringify({ channel_name: targetChannel, persona: targetAgent })
       });
 
-      // 5. Subscribe to incoming AI Agent audio stream automatically
+      // 5. Subscribe to incoming AI Agent audio stream automatically via VAD
       client.on('user-published', async (user: any, mediaType: string) => {
         await client.subscribe(user, mediaType);
         if (mediaType === 'audio') {
@@ -423,21 +422,6 @@ export default function FullLiveInterviewRoom() {
     router.push('/results');
   };
 
-  // Switch to next question and reset dynamic state
-  const handleNextQuestion = () => {
-    const nextIdx = (questionIndex + 1) % questionsList.length;
-    setQuestionIndex(nextIdx);
-    const nextQData = questionsList[nextIdx];
-    
-    setLiveAnswer(nextQData.defaultAnswer);
-    setLiveAccuracy(90 + Math.floor(Math.random() * 8));
-    setLiveCorrection(`Listening for answer on ${nextQData.keyConcept}...`);
-    setLiveScores({ comm: 88, tech: 90, conf: 92, prob: 88 });
-    setLiveFiller(0);
-    setLiveWpm(132);
-    setLiveDecision('Question updated. AI agents primed for evaluation.');
-  };
-
   return (
     <div className="h-screen w-screen bg-[#040711] text-slate-200 font-sans flex flex-col overflow-hidden select-none">
       
@@ -632,7 +616,7 @@ export default function FullLiveInterviewRoom() {
                     : 'text-slate-400 bg-slate-900/80 border-slate-800'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
-                  {isAiSpeaking ? 'Speaking Live...' : 'Listening to You'}
+                  {isAiSpeaking ? 'Speaking Live...' : 'Listening via Agora VAD'}
                 </span>
               </div>
 
@@ -718,7 +702,7 @@ export default function FullLiveInterviewRoom() {
                   {candidateName}
                 </span>
                 <span className={`text-[10px] font-mono ${isMicMuted ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  {isMicMuted ? 'Mic Muted' : 'Speaking Live (Transcribing...)'}
+                  {isMicMuted ? 'Mic Muted' : 'Live Voice Stream Active'}
                 </span>
               </div>
             </div>
@@ -795,7 +779,7 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
-                Model: Jynex Evaluator v2.4 (Real-Time)
+                Model: Jynex Evaluator v2.4 (Agora VAD Active)
               </span>
             </div>
 
@@ -840,7 +824,7 @@ export default function FullLiveInterviewRoom() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
                 <Zap size={14} className="text-purple-400" />
-                <span>Agent Collaboration System</span>
+                <span>Agent Collaboration System (Continuous VAD Flow)</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
                 Shared Neural Context
@@ -886,22 +870,6 @@ export default function FullLiveInterviewRoom() {
                 <span>AI Collaboration Decision</span>
               </div>
               <p className="text-xs text-slate-300 mt-1 font-medium">{liveDecision}</p>
-            </div>
-
-            {/* Next Question CTA Banner */}
-            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl p-3.5 flex items-center justify-between text-white shadow-xl shadow-indigo-600/20">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 block">NEXT QUESTION GENERATED</span>
-                <span className="text-xs font-semibold text-white">
-                  Question {questionIndex + 1} of {questionsList.length} • Difficulty: Medium → <strong className="text-amber-300">Hard</strong>
-                </span>
-              </div>
-              <button
-                onClick={handleNextQuestion}
-                className="w-9 h-9 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white transition active:scale-95 shadow-md"
-              >
-                <ArrowRight size={16} />
-              </button>
             </div>
           </div>
 
@@ -1004,7 +972,7 @@ export default function FullLiveInterviewRoom() {
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-cyan-400" /> Live Transcripts
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">Continuous</span>
+              <span className="text-[10px] text-slate-500 font-mono">Continuous VAD</span>
             </div>
 
             <div className="space-y-2 overflow-y-auto max-h-52 pr-1 text-xs">
@@ -1029,7 +997,7 @@ export default function FullLiveInterviewRoom() {
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300">
               <span className="flex items-center gap-1.5"><Mic size={14} className="text-cyan-400" /> Voice Activity</span>
               <span className={`text-[10px] ${isMicMuted ? 'text-rose-400' : 'text-cyan-400'}`}>
-                {isMicMuted ? 'Muted' : 'Listening...'}
+                {isMicMuted ? 'Muted' : 'Agora VAD Active'}
               </span>
             </div>
 
