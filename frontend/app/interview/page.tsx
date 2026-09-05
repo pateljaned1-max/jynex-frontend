@@ -33,13 +33,21 @@ import {
   Zap,
   Activity,
   Smile,
-  MonitorUp
+  MonitorUp,
+  Sliders,
+  Play
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
 
 export default function FullLiveInterviewRoom() {
   const router = useRouter();
+
+  // Configuration Modal States
+  const [isConfiguring, setIsConfiguring] = useState(true);
+  const [selectedTrack, setSelectedTrack] = useState('Full-Stack Engineering (React & Node.js)');
+  const [selectedDuration, setSelectedDuration] = useState(15);
+  const [targetAgent, setTargetAgent] = useState<'sarah' | 'alex' | 'emma'>('sarah');
 
   // Call Controls State
   const [isMicMuted, setIsMicMuted] = useState(false);
@@ -66,11 +74,16 @@ export default function FullLiveInterviewRoom() {
 
   // Dynamic Question & Real-Time Tracker States
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(12 * 60 + 45);
+  const [secondsLeft, setSecondsLeft] = useState(15 * 60);
+
+  // Sync Timer with Selected Duration
+  useEffect(() => {
+    setSecondsLeft(selectedDuration * 60);
+  }, [selectedDuration]);
 
   const questionsList = [
     {
-      q: 'What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?',
+      q: `Let's discuss your experience in ${selectedTrack}. What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?`,
       keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
       defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
       keyConcept: 'Virtual DOM Diffing & Reconciliation',
@@ -124,79 +137,60 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Initialize Agora Real-Time Voice Session on Mount
-  useEffect(() => {
+  // Agora Real-Time Voice Session Function (Triggered via Modal Start)
+  const startAgoraCall = async (targetChannel: string) => {
     let client: any = null;
     let audioTrack: any = null;
-    const generatedChannel = `jynex-room-${Date.now()}`;
-    setChannelName(generatedChannel);
 
-    async function initAgoraSession() {
-      try {
-        // 1. Fetch token and app_id from backend
-        const tokenRes = await fetch(`${BACKEND_URL}/api/agora/token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ channel_name: generatedChannel, uid: 0 })
-        });
-        
-        if (!tokenRes.ok) throw new Error('Failed to fetch Agora token');
-        const { token, app_id } = await tokenRes.json();
-
-        // 2. Create Agora client and join channel
-        client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-        setAgoraClient(client);
-
-        await client.join(app_id, generatedChannel, token, null);
-
-        // 3. Create and publish local microphone audio track
-        audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-        setLocalAudioTrack(audioTrack);
-        await client.publish([audioTrack]);
-        setIsAgoraConnected(true);
-
-        // 4. Trigger backend to bring AI Agent into the channel
-        await fetch(`${BACKEND_URL}/api/agora/start-agent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ channel_name: generatedChannel, persona: 'sarah' })
-        });
-
-        // 5. Subscribe to incoming AI Agent audio stream automatically
-        client.on('user-published', async (user: any, mediaType: string) => {
-          await client.subscribe(user, mediaType);
-          if (mediaType === 'audio') {
-            user.audioTrack.play();
-            setIsAiSpeaking(true);
-          }
-        });
-
-        client.on('user-unpublished', (user: any, mediaType: string) => {
-          if (mediaType === 'audio') {
-            setIsAiSpeaking(false);
-          }
-        });
-
-      } catch (err) {
-        console.warn('Agora WebRTC initialization fallback to browser speech synthesis:', err);
-      }
-    }
-
-    initAgoraSession();
-
-    return () => {
-      if (audioTrack) audioTrack.close();
-      if (client) {
-        client.leave().catch(() => {});
-      }
-      // Notify backend to stop agent
-      fetch(`${BACKEND_URL}/api/agora/stop-agent`, {
+    try {
+      // 1. Fetch token and app_id from backend
+      const tokenRes = await fetch(`${BACKEND_URL}/api/agora/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel_name: generatedChannel })
-      }).catch(() => {});
-    };
-  }, []);
+        body: JSON.stringify({ channel_name: targetChannel, uid: 0 })
+      });
+      
+      if (!tokenRes.ok) throw new Error('Failed to fetch Agora token');
+      const { token, app_id } = await tokenRes.json();
+
+      // 2. Create Agora client and join channel
+      client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      setAgoraClient(client);
+
+      await client.join(app_id, targetChannel, token, null);
+
+      // 3. Create and publish local microphone audio track
+      audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      setLocalAudioTrack(audioTrack);
+      await client.publish([audioTrack]);
+      setIsAgoraConnected(true);
+
+      // 4. Trigger backend to bring AI Agent into the channel
+      await fetch(`${BACKEND_URL}/api/agora/start-agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel_name: targetChannel, persona: targetAgent })
+      });
+
+      // 5. Subscribe to incoming AI Agent audio stream automatically
+      client.on('user-published', async (user: any, mediaType: string) => {
+        await client.subscribe(user, mediaType);
+        if (mediaType === 'audio') {
+          user.audioTrack.play();
+          setIsAiSpeaking(true);
+        }
+      });
+
+      client.on('user-unpublished', (user: any, mediaType: string) => {
+        if (mediaType === 'audio') {
+          setIsAiSpeaking(false);
+        }
+      });
+
+    } catch (err) {
+      console.warn('Agora WebRTC initialization fallback to browser speech synthesis:', err);
+    }
+  };
 
   // Fallback Text-To-Speech (AI Voice) if Agora is connecting
   const speakText = (text: string) => {
@@ -217,6 +211,7 @@ export default function FullLiveInterviewRoom() {
   };
 
   useEffect(() => {
+    if (isConfiguring) return;
     const timer = setTimeout(() => {
       speakText(currentQ.q);
     }, 600);
@@ -227,11 +222,11 @@ export default function FullLiveInterviewRoom() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [questionIndex, isSpeakerMuted, isAgoraConnected]);
+  }, [isConfiguring, questionIndex, isSpeakerMuted, isAgoraConnected]);
 
   // LIVE SPEECH RECOGNITION (Speech-To-Text from user's mic)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (isConfiguring || typeof window === 'undefined') return;
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
@@ -298,7 +293,7 @@ export default function FullLiveInterviewRoom() {
         recognition.stop();
       } catch (err) {}
     };
-  }, [isMicMuted, questionIndex]);
+  }, [isConfiguring, isMicMuted, questionIndex]);
 
   // Real Webcam initialization
   useEffect(() => {
@@ -338,6 +333,7 @@ export default function FullLiveInterviewRoom() {
 
   // Audio Canvas Visualizer
   useEffect(() => {
+    if (isConfiguring) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -390,15 +386,16 @@ export default function FullLiveInterviewRoom() {
     render();
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isMicMuted]);
+  }, [isConfiguring, isMicMuted]);
 
   // Timer countdown
   useEffect(() => {
+    if (isConfiguring) return;
     const interval = setInterval(() => {
       setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isConfiguring]);
 
   const formatTimer = (s: number) => {
     const min = Math.floor(s / 60);
@@ -444,6 +441,97 @@ export default function FullLiveInterviewRoom() {
   return (
     <div className="h-screen w-screen bg-[#040711] text-slate-200 font-sans flex flex-col overflow-hidden select-none">
       
+      {/* PRE-INTERVIEW CONFIGURATION MODAL */}
+      {isConfiguring && (
+        <div className="absolute inset-0 z-50 bg-[#040711]/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
+          <div className="max-w-2xl w-full bg-slate-950 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold">
+                <Sliders size={13} /> Session Configuration
+              </div>
+              <h2 className="text-2xl font-black text-white tracking-tight">Configure Your Live Interview Room</h2>
+              <p className="text-xs text-slate-400">Select your target track, session duration, and AI lead interviewer before launching.</p>
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Interview Track / Role</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {['Full-Stack Engineering (React & Node.js)', 'Distributed Systems & Microservices', 'Database Architecture (SQL vs NoSQL)', 'AI & Cloud Infrastructure'].map((track) => (
+                    <button
+                      key={track}
+                      onClick={() => setSelectedTrack(track)}
+                      className={`p-3 rounded-xl border text-left text-xs font-semibold transition ${
+                        selectedTrack === track
+                          ? 'bg-cyan-600/20 border-cyan-500 text-white shadow-lg shadow-cyan-500/10'
+                          : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                      }`}
+                    >
+                      {track}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Session Duration</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[10, 15, 30].map((mins) => (
+                    <button
+                      key={mins}
+                      onClick={() => setSelectedDuration(mins)}
+                      className={`py-2.5 rounded-xl border text-center text-xs font-bold transition flex items-center justify-center gap-2 ${
+                        selectedDuration === mins
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-indigo-400 text-white shadow-lg'
+                          : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Clock size={14} /> {mins} Minutes
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Lead AI Interviewer</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {(['sarah', 'alex', 'emma'] as const).map((agentKey) => {
+                    const agent = agentKey === 'sarah' ? { name: 'Sarah', role: 'Hiring Lead' } : agentKey === 'alex' ? { name: 'Alex', role: 'Technical Lead' } : { name: 'Emma', role: 'Behavioral Lead' };
+                    const isSelected = targetAgent === agentKey;
+                    return (
+                      <button
+                        key={agentKey}
+                        onClick={() => setTargetAgent(agentKey)}
+                        className={`p-3 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-purple-600/20 border-purple-500 text-white shadow-lg'
+                            : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-xs font-bold">{agent.name}</span>
+                        <span className="text-[10px] text-slate-400">{agent.role}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                const generatedChannel = `jynex-room-${Date.now()}`;
+                setChannelName(generatedChannel);
+                setIsConfiguring(false);
+                startAgoraCall(generatedChannel);
+              }}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl transition active:scale-[0.99]"
+            >
+              <Play size={16} fill="white" /> Launch Live Interview Room
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* HEADER */}
       <header className="h-14 border-b border-slate-800/80 bg-[#060a17]/95 px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-4">
@@ -460,7 +548,7 @@ export default function FullLiveInterviewRoom() {
 
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-            Live Agora WebRTC
+            Live Agora WebRTC • {selectedTrack.split(' ')[0]}
           </div>
         </div>
 
@@ -536,7 +624,7 @@ export default function FullLiveInterviewRoom() {
             }`}>
               <div className="w-full flex items-center justify-between text-xs z-10">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-medium text-[10px]">
-                  <Sparkles size={11} /> AI Interviewer
+                  <Sparkles size={11} /> AI Interviewer ({targetAgent.toUpperCase()})
                 </span>
                 <span className={`text-[10px] font-mono flex items-center gap-1 px-2 py-0.5 rounded-md border ${
                   isAiSpeaking 
@@ -561,7 +649,7 @@ export default function FullLiveInterviewRoom() {
                   <div className="w-24 h-24 rounded-full bg-[#070b1a] flex items-center justify-center border border-cyan-300/40 overflow-hidden">
                     <img
                       src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80"
-                      alt="Sarah AI"
+                      alt="AI Lead"
                       className={`w-full h-full object-cover rounded-full transition-all ${isAiSpeaking ? 'brightness-110' : 'brightness-75'}`}
                     />
                   </div>
@@ -571,7 +659,7 @@ export default function FullLiveInterviewRoom() {
               <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/70 backdrop-blur-md p-2 rounded-xl border border-slate-800/60">
                 <span className="text-slate-200 font-semibold flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${isAiSpeaking ? 'bg-emerald-400 shadow-[0_0_6px_#10b981]' : 'bg-slate-500'}`} />
-                  Sarah (Technical AI Lead)
+                  {targetAgent === 'sarah' ? 'Sarah (Hiring Lead)' : targetAgent === 'alex' ? 'Alex (Tech Lead)' : 'Emma (Behavioral Lead)'}
                 </span>
                 <div className="flex items-center gap-1 h-3">
                   <span className={`w-0.5 bg-cyan-400 rounded-full ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
