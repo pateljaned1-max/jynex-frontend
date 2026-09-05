@@ -14,8 +14,6 @@ import {
   PhoneOff,
   CheckCircle2,
   AlertTriangle,
-  BookOpen,
-  HelpCircle,
   Clock,
   Sparkles,
   ShieldCheck,
