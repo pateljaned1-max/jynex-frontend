@@ -54,6 +54,15 @@ export default function FullLiveInterviewRoom() {
   const [candidateName, setCandidateName] = useState('Candidate');
   const [cameraError, setCameraError] = useState<string | null>(null);
 
+  // Safe Session State
+  const [sessionData, setSessionData] = useState<{
+    startTime: number;
+    sessionId: string;
+  }>({
+    startTime: Date.now(),
+    sessionId: `INT-${Date.now()}`
+  });
+
   // Agora State & Refs
   const [agoraClient, setAgoraClient] = useState<any>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
@@ -108,7 +117,7 @@ export default function FullLiveInterviewRoom() {
     }
   ];
 
-  const currentQ = questionsList[questionIndex];
+  const currentQ = questionsList[questionIndex] || questionsList[0];
 
   // LIVE DYNAMIC METRICS STATE
   const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
@@ -123,6 +132,7 @@ export default function FullLiveInterviewRoom() {
 
   // Load Candidate Name
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const saved = localStorage.getItem('user') || localStorage.getItem('currentUser');
     if (saved) {
       try {
@@ -134,7 +144,7 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Agora Real-Time Voice Session Function (Step 1 Fixed: Passing data.token and UID 0)
+  // Agora Real-Time Voice Session Function
   const startAgoraCall = async (targetChannel: string) => {
     let client: any = null;
     let audioTrack: any = null;
@@ -142,7 +152,7 @@ export default function FullLiveInterviewRoom() {
     try {
       const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
 
-      // 1. Fetch token and app_id from backend
+      // 1. Fetch dynamic token from backend
       const tokenRes = await fetch(`${BACKEND_URL}/api/agora/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -152,7 +162,7 @@ export default function FullLiveInterviewRoom() {
       if (!tokenRes.ok) throw new Error('Failed to fetch Agora token');
       const data = await tokenRes.json();
 
-      // 2. Create Agora client and join channel using data.token and UID 0
+      // 2. Create Agora client and join channel
       client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       setAgoraClient(client);
 
@@ -164,7 +174,7 @@ export default function FullLiveInterviewRoom() {
       await client.publish([audioTrack]);
       setIsAgoraConnected(true);
 
-      // 4. Trigger backend to bring AI Agent into the channel and store agent_id
+      // 4. Trigger backend to bring AI Agent into the channel and store agent_id safely
       const agentRes = await fetch(`${BACKEND_URL}/api/agora/start-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,8 +183,9 @@ export default function FullLiveInterviewRoom() {
 
       if (agentRes.ok) {
         const agentData = await agentRes.json();
-        if (agentData.agent_id) {
-          localStorage.setItem('active_agent_id', agentData.agent_id);
+        const extractedAgentId = agentData.agent_id || agentData.data?.agent_id || agentData.data?.id;
+        if (extractedAgentId) {
+          localStorage.setItem('active_agent_id', extractedAgentId);
         }
       }
 
@@ -182,8 +193,12 @@ export default function FullLiveInterviewRoom() {
       client.on('user-published', async (user: any, mediaType: string) => {
         await client.subscribe(user, mediaType);
         if (mediaType === 'audio') {
-          user.audioTrack.play();
-          setIsAiSpeaking(true);
+          try {
+            user.audioTrack.play();
+            setIsAiSpeaking(true);
+          } catch (audioErr) {
+            console.warn('Playback error:', audioErr);
+          }
         }
       });
 
@@ -193,12 +208,18 @@ export default function FullLiveInterviewRoom() {
         }
       });
 
+      client.on('connection-state-change', (curState: string) => {
+        if (curState === 'DISCONNECTED') {
+          setIsAgoraConnected(false);
+        }
+      });
+
     } catch (err) {
-      console.warn('Agora WebRTC initialization fallback to browser speech synthesis:', err);
+      console.warn('Agora WebRTC initialization issue:', err);
     }
   };
 
-  // Fallback Text-To-Speech (AI Voice) if Agora is connecting
+  // Fallback Text-To-Speech only when Agora RTC is NOT active
   const speakText = (text: string) => {
     if (isAgoraConnected) return;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -217,6 +238,13 @@ export default function FullLiveInterviewRoom() {
   };
 
   useEffect(() => {
+    if (isAgoraConnected) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      return;
+    }
+
     if (isConfiguring) return;
     const timer = setTimeout(() => {
       speakText(currentQ.q);
@@ -409,13 +437,17 @@ export default function FullLiveInterviewRoom() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // Handle End Call & Cleanup Agora session (Step 2 Fixed: Passing agent_id in stop-agent body)
+  // Handle End Call & Cleanup Agora session
   const handleEndCall = async () => {
-    if (localAudioTrack) {
-      localAudioTrack.close();
-    }
-    if (agoraClient) {
-      await agoraClient.leave();
+    try {
+      if (localAudioTrack) {
+        localAudioTrack.close();
+      }
+      if (agoraClient) {
+        await agoraClient.leave();
+      }
+    } catch (err) {
+      console.warn('Error disconnecting Agora client:', err);
     }
     
     const agentId = localStorage.getItem('active_agent_id');
@@ -517,6 +549,10 @@ export default function FullLiveInterviewRoom() {
               onClick={() => {
                 const generatedChannel = `jynex-room-${Date.now()}`;
                 setChannelName(generatedChannel);
+                setSessionData({
+                  startTime: Date.now(),
+                  sessionId: `INT-${Date.now()}`
+                });
                 setIsConfiguring(false);
                 startAgoraCall(generatedChannel);
               }}
