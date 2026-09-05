@@ -140,7 +140,6 @@ export default function FullLiveInterviewRoom() {
     let audioTrack: any = null;
 
     try {
-      // Dynamically import Agora SDK only on the client side to prevent SSR prerender errors
       const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
 
       // 1. Fetch token and app_id from backend
@@ -194,7 +193,7 @@ export default function FullLiveInterviewRoom() {
 
   // Fallback Text-To-Speech (AI Voice) if Agora is connecting
   const speakText = (text: string) => {
-    if (isAgoraConnected) return; // Let Agora handle real audio stream when connected
+    if (isAgoraConnected) return;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMuted) return;
 
