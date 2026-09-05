@@ -44,7 +44,7 @@ export default function FullLiveInterviewRoom() {
   const [isConfiguring, setIsConfiguring] = useState(true);
   const [selectedTrack, setSelectedTrack] = useState('Full-Stack Engineering (React & Node.js)');
   const [selectedDuration, setSelectedDuration] = useState(15);
-  const [targetAgent, setTargetAgent] = useState<'sarah' | 'alex' | 'emma'>('sarah');
+  const [targetAgent, setTargetAgent] = useState<'sarah' | 'alex' | 'emma'>('alex');
 
   // Call Controls State
   const [isMicMuted, setIsMicMuted] = useState(false);
@@ -72,7 +72,7 @@ export default function FullLiveInterviewRoom() {
   // AI Speaking State & Voice
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
 
-  // Video & Canvas Refs
+  // Video, Canvas & Voice Refs
   const userVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -220,36 +220,55 @@ export default function FullLiveInterviewRoom() {
     }
   };
 
-  // Fallback Text-To-Speech only when Agora RTC is NOT active
+  // Safe Text-To-Speech with Echo Prevention
   const speakText = (text: string) => {
-    if (isAgoraConnected) return;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMuted) return;
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
-    utterance.pitch = 1.05;
+    utterance.pitch = 1.0;
 
-    utterance.onstart = () => setIsAiSpeaking(true);
-    utterance.onend = () => setIsAiSpeaking(false);
-    utterance.onerror = () => setIsAiSpeaking(false);
+    utterance.onstart = () => {
+      setIsAiSpeaking(true);
+      // AI bolte waqt mic ko pause rakhein taaki speech synthesize beech mein cut na ho
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+    };
+
+    utterance.onend = () => {
+      setIsAiSpeaking(false);
+      // Question bolne ke baad candidate ka mic sunna start karein
+      if (!isMicMuted && recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (e) {}
+      }
+    };
+
+    utterance.onerror = () => {
+      setIsAiSpeaking(false);
+      if (!isMicMuted && recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (e) {}
+      }
+    };
 
     window.speechSynthesis.speak(utterance);
   };
 
+  // Trigger question speech on configuration close or questionIndex advance
   useEffect(() => {
-    if (isAgoraConnected) {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-      return;
-    }
-
     if (isConfiguring) return;
+
     const timer = setTimeout(() => {
       speakText(currentQ.q);
-    }, 600);
+    }, 500);
 
     return () => {
       clearTimeout(timer);
@@ -257,9 +276,9 @@ export default function FullLiveInterviewRoom() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [isConfiguring, questionIndex, isSpeakerMuted, isAgoraConnected]);
+  }, [isConfiguring, questionIndex, isSpeakerMuted]);
 
-  // LIVE SPEECH RECOGNITION (Speech-To-Text from user's mic + Continuous Silence Auto-Advance)
+  // LIVE SPEECH RECOGNITION + SILENCE DETECTION AUTO ADVANCE
   useEffect(() => {
     if (isConfiguring || typeof window === 'undefined') return;
 
@@ -272,6 +291,9 @@ export default function FullLiveInterviewRoom() {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
+      // Agar AI bol raha ho toh candidate input ignore karein
+      if (isAiSpeaking) return;
+
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         interimTranscript += event.results[i][0].transcript;
@@ -300,25 +322,24 @@ export default function FullLiveInterviewRoom() {
         });
 
         if (matched.length >= 3) {
-          setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Add edge-case considerations to hit 100%.`);
+          setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Advancing question difficulty.`);
           setLiveGrammar('Sharp & Structured');
-          setLiveDecision('All 3 AI agents approve technical accuracy. Ready to advance difficulty.');
+          setLiveDecision('AI Agents approve response depth. Advancing to next evaluation topic.');
         } else {
           setLiveCorrection(`Try mentioning relevant terms like: ${currentQ.keywords.slice(0, 3).join(', ')}.`);
           setLiveGrammar('Developing Argument');
           setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
         }
 
-        // SILENCE DETECTION: 1.8s shant rehne par next question auto-advance karein
+        // SILENCE DETECTION: 1.8 second shant rehne par agla question auto advance hoga
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
         silenceTimerRef.current = setTimeout(() => {
           setQuestionIndex((prev) => {
             if (prev < questionsList.length - 1) {
               const nextIdx = prev + 1;
-              const nextQuestion = questionsList[nextIdx];
 
-              // Optional: Backend ko next question ka signal bhejna
+              // Backend ko dynamic question progression notify karein
               fetch(`${BACKEND_URL}/api/interview/question`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -327,11 +348,8 @@ export default function FullLiveInterviewRoom() {
                   previous_answer: spokenText,
                   question_index: nextIdx
                 })
-              }).catch((err) => console.warn('Backend question advance note:', err));
+              }).catch((err) => console.warn('Backend question sync note:', err));
 
-              if (!isAgoraConnected) {
-                speakText(nextQuestion.q);
-              }
               return nextIdx;
             }
             return prev;
@@ -342,12 +360,14 @@ export default function FullLiveInterviewRoom() {
 
     recognition.onerror = (e: any) => console.log('Speech Recognition:', e.error);
 
-    if (!isMicMuted) {
+    if (!isMicMuted && !isAiSpeaking) {
       try {
         recognition.start();
       } catch (err) {}
     } else {
-      recognition.stop();
+      try {
+        recognition.stop();
+      } catch (err) {}
     }
 
     recognitionRef.current = recognition;
@@ -358,7 +378,7 @@ export default function FullLiveInterviewRoom() {
         recognition.stop();
       } catch (err) {}
     };
-  }, [isConfiguring, isMicMuted, questionIndex, isAgoraConnected]);
+  }, [isConfiguring, isMicMuted, questionIndex, isAiSpeaking]);
 
   // Real Webcam initialization
   useEffect(() => {
