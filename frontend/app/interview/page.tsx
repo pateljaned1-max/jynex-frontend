@@ -1,5 +1,5 @@
 'use client';
-import AgoraRTC from 'agora-rtc-sdk-ng';
+
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -134,12 +134,15 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Agora Real-Time Voice Session Function (Triggered via Modal Start)
+  // Agora Real-Time Voice Session Function with Dynamic Client-Side Import
   const startAgoraCall = async (targetChannel: string) => {
     let client: any = null;
     let audioTrack: any = null;
 
     try {
+      // Dynamically import Agora SDK only on the client side to prevent SSR prerender errors
+      const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
+
       // 1. Fetch token and app_id from backend
       const tokenRes = await fetch(`${BACKEND_URL}/api/agora/token`, {
         method: 'POST',
