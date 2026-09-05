@@ -77,6 +77,7 @@ export default function FullLiveInterviewRoom() {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Dynamic Question & Real-Time Tracker States
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -258,7 +259,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isConfiguring, questionIndex, isSpeakerMuted, isAgoraConnected]);
 
-  // LIVE SPEECH RECOGNITION (Speech-To-Text from user's mic)
+  // LIVE SPEECH RECOGNITION (Speech-To-Text from user's mic + Continuous Silence Auto-Advance)
   useEffect(() => {
     if (isConfiguring || typeof window === 'undefined') return;
 
@@ -307,6 +308,35 @@ export default function FullLiveInterviewRoom() {
           setLiveGrammar('Developing Argument');
           setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
         }
+
+        // SILENCE DETECTION: 1.8s shant rehne par next question auto-advance karein
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+        silenceTimerRef.current = setTimeout(() => {
+          setQuestionIndex((prev) => {
+            if (prev < questionsList.length - 1) {
+              const nextIdx = prev + 1;
+              const nextQuestion = questionsList[nextIdx];
+
+              // Optional: Backend ko next question ka signal bhejna
+              fetch(`${BACKEND_URL}/api/interview/question`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  role: selectedTrack,
+                  previous_answer: spokenText,
+                  question_index: nextIdx
+                })
+              }).catch((err) => console.warn('Backend question advance note:', err));
+
+              if (!isAgoraConnected) {
+                speakText(nextQuestion.q);
+              }
+              return nextIdx;
+            }
+            return prev;
+          });
+        }, 1800);
       }
     };
 
@@ -323,11 +353,12 @@ export default function FullLiveInterviewRoom() {
     recognitionRef.current = recognition;
 
     return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       try {
         recognition.stop();
       } catch (err) {}
     };
-  }, [isConfiguring, isMicMuted, questionIndex]);
+  }, [isConfiguring, isMicMuted, questionIndex, isAgoraConnected]);
 
   // Real Webcam initialization
   useEffect(() => {
