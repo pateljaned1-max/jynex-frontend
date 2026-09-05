@@ -1,5 +1,5 @@
 'use client';
-
+import AgoraRTC from 'agora-rtc-sdk-ng';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -36,6 +36,8 @@ import {
   MonitorUp
 } from 'lucide-react';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
+
 export default function FullLiveInterviewRoom() {
   const router = useRouter();
 
@@ -46,6 +48,12 @@ export default function FullLiveInterviewRoom() {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [candidateName, setCandidateName] = useState('Candidate');
   const [cameraError, setCameraError] = useState<string | null>(null);
+
+  // Agora State & Refs
+  const [agoraClient, setAgoraClient] = useState<any>(null);
+  const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
+  const [channelName, setChannelName] = useState<string>('');
+  const [isAgoraConnected, setIsAgoraConnected] = useState<boolean>(false);
 
   // AI Speaking State & Voice
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -92,7 +100,7 @@ export default function FullLiveInterviewRoom() {
 
   const currentQ = questionsList[questionIndex];
 
-  // LIVE DYNAMIC METRICS STATE (Changes as user speaks)
+  // LIVE DYNAMIC METRICS STATE
   const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
   const [liveAccuracy, setLiveAccuracy] = useState(92);
   const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
@@ -116,8 +124,83 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
-  // Text-To-Speech (AI Voice)
+  // Initialize Agora Real-Time Voice Session on Mount
+  useEffect(() => {
+    let client: any = null;
+    let audioTrack: any = null;
+    const generatedChannel = `jynex-room-${Date.now()}`;
+    setChannelName(generatedChannel);
+
+    async function initAgoraSession() {
+      try {
+        // 1. Fetch token and app_id from backend
+        const tokenRes = await fetch(`${BACKEND_URL}/api/agora/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel_name: generatedChannel, uid: 0 })
+        });
+        
+        if (!tokenRes.ok) throw new Error('Failed to fetch Agora token');
+        const { token, app_id } = await tokenRes.json();
+
+        // 2. Create Agora client and join channel
+        client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        setAgoraClient(client);
+
+        await client.join(app_id, generatedChannel, token, null);
+
+        // 3. Create and publish local microphone audio track
+        audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        setLocalAudioTrack(audioTrack);
+        await client.publish([audioTrack]);
+        setIsAgoraConnected(true);
+
+        // 4. Trigger backend to bring AI Agent into the channel
+        await fetch(`${BACKEND_URL}/api/agora/start-agent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel_name: generatedChannel, persona: 'sarah' })
+        });
+
+        // 5. Subscribe to incoming AI Agent audio stream automatically
+        client.on('user-published', async (user: any, mediaType: string) => {
+          await client.subscribe(user, mediaType);
+          if (mediaType === 'audio') {
+            user.audioTrack.play();
+            setIsAiSpeaking(true);
+          }
+        });
+
+        client.on('user-unpublished', (user: any, mediaType: string) => {
+          if (mediaType === 'audio') {
+            setIsAiSpeaking(false);
+          }
+        });
+
+      } catch (err) {
+        console.warn('Agora WebRTC initialization fallback to browser speech synthesis:', err);
+      }
+    }
+
+    initAgoraSession();
+
+    return () => {
+      if (audioTrack) audioTrack.close();
+      if (client) {
+        client.leave().catch(() => {});
+      }
+      // Notify backend to stop agent
+      fetch(`${BACKEND_URL}/api/agora/stop-agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel_name: generatedChannel })
+      }).catch(() => {});
+    };
+  }, []);
+
+  // Fallback Text-To-Speech (AI Voice) if Agora is connecting
   const speakText = (text: string) => {
+    if (isAgoraConnected) return; // Let Agora handle real audio stream when connected
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMuted) return;
 
@@ -133,7 +216,6 @@ export default function FullLiveInterviewRoom() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Trigger speech on question switch
   useEffect(() => {
     const timer = setTimeout(() => {
       speakText(currentQ.q);
@@ -145,7 +227,7 @@ export default function FullLiveInterviewRoom() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [questionIndex, isSpeakerMuted]);
+  }, [questionIndex, isSpeakerMuted, isAgoraConnected]);
 
   // LIVE SPEECH RECOGNITION (Speech-To-Text from user's mic)
   useEffect(() => {
@@ -169,13 +251,11 @@ export default function FullLiveInterviewRoom() {
         const spokenText = interimTranscript;
         setLiveAnswer(spokenText);
 
-        // Calculate dynamic real-time accuracy based on keyword hit rate
         const lower = spokenText.toLowerCase();
         const matched = currentQ.keywords.filter((kw) => lower.includes(kw));
         const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / currentQ.keywords.length) * 35)));
         setLiveAccuracy(matchRatio);
 
-        // Update live metrics dynamically
         const words = spokenText.split(/\s+/).length;
         setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
         
@@ -326,13 +406,32 @@ export default function FullLiveInterviewRoom() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
+  // Handle End Call & Cleanup Agora session
+  const handleEndCall = async () => {
+    if (localAudioTrack) {
+      localAudioTrack.close();
+    }
+    if (agoraClient) {
+      await agoraClient.leave();
+    }
+    if (channelName) {
+      try {
+        await fetch(`${BACKEND_URL}/api/agora/stop-agent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel_name: channelName })
+        });
+      } catch (e) {}
+    }
+    router.push('/results');
+  };
+
   // Switch to next question and reset dynamic state
   const handleNextQuestion = () => {
     const nextIdx = (questionIndex + 1) % questionsList.length;
     setQuestionIndex(nextIdx);
     const nextQData = questionsList[nextIdx];
     
-    // Dynamically reset tracker data for next round
     setLiveAnswer(nextQData.defaultAnswer);
     setLiveAccuracy(90 + Math.floor(Math.random() * 8));
     setLiveCorrection(`Listening for answer on ${nextQData.keyConcept}...`);
@@ -361,7 +460,7 @@ export default function FullLiveInterviewRoom() {
 
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-            Live Interview
+            Live Agora WebRTC
           </div>
         </div>
 
@@ -381,7 +480,7 @@ export default function FullLiveInterviewRoom() {
         </div>
 
         <button
-          onClick={() => router.push('/results')}
+          onClick={handleEndCall}
           className="bg-rose-600/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 px-4 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-lg shadow-rose-600/10"
         >
           <PhoneOff size={14} /> End Interview
@@ -391,7 +490,7 @@ export default function FullLiveInterviewRoom() {
       {/* MAIN VIEWPORT */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* LEFT NAV SIDEBAR (Linked to /agents and /reports) */}
+        {/* LEFT NAV SIDEBAR */}
         <aside className="w-52 border-r border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 hidden lg:flex">
           <nav className="space-y-1.5">
             <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
@@ -445,7 +544,7 @@ export default function FullLiveInterviewRoom() {
                     : 'text-slate-400 bg-slate-900/80 border-slate-800'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
-                  {isAiSpeaking ? 'Speaking Question...' : 'Listening to You'}
+                  {isAiSpeaking ? 'Speaking Live...' : 'Listening to You'}
                 </span>
               </div>
 
@@ -591,7 +690,7 @@ export default function FullLiveInterviewRoom() {
             </button>
 
             <button
-              onClick={() => router.push('/results')}
+              onClick={handleEndCall}
               className="px-4 h-9 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs flex items-center gap-1.5 transition shadow-lg shadow-rose-600/20 ml-2"
             >
               <PhoneOff size={14} /> End Call
