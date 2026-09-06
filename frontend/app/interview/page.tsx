@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -51,36 +51,28 @@ export default function FullLiveInterviewRoom() {
   const router = useRouter();
 
   // Configuration Modal States
-  const [isConfiguring, setIsConfiguring] = useState(true);
-  const [selectedTrack, setSelectedTrack] = useState('Full-Stack Engineering (React & Node.js)');
-  const [selectedDuration, setSelectedDuration] = useState(15);
+  const [isConfiguring, setIsConfiguring] = useState<boolean>(true);
+  const [selectedTrack, setSelectedTrack] = useState<string>('Full-Stack Engineering (React & Node.js)');
+  const [selectedDuration, setSelectedDuration] = useState<number>(15);
   const [targetAgent, setTargetAgent] = useState<'sarah' | 'alex' | 'emma'>('alex');
 
   // Call Controls State
-  const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
-  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [candidateName, setCandidateName] = useState('Candidate');
+  const [isMicMuted, setIsMicMuted] = useState<boolean>(false);
+  const [isVideoOff, setIsVideoOff] = useState<boolean>(false);
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState<boolean>(false);
+  const [isScreenSharing, setIsScreenSharing] = useState<boolean>(false);
+  const [candidateName, setCandidateName] = useState<string>('Candidate');
   const [cameraError, setCameraError] = useState<string | null>(null);
-
-  // Safe Session State
-  const [sessionData, setSessionData] = useState<{
-    startTime: number;
-    sessionId: string;
-  }>({
-    startTime: Date.now(),
-    sessionId: `INT-${Date.now()}`
-  });
 
   // Agora State & Refs
   const [agoraClient, setAgoraClient] = useState<any>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
-  const [channelName, setChannelName] = useState<string>('');
-  const [isAgoraConnected, setIsAgoraConnected] = useState<boolean>(false);
+  const [, setChannelName] = useState<string>('');
 
-  // AI Speaking State & Voice
-  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+  // AI Speaking State & Refs
+  const [isAiSpeaking, setIsAiSpeaking] = useState<boolean>(false);
+  const isAiSpeakingRef = useRef<boolean>(false);
+  const isFetchingRef = useRef<boolean>(false);
 
   // Video, Canvas & Voice Refs
   const userVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -89,146 +81,83 @@ export default function FullLiveInterviewRoom() {
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Dynamic Question & Real-Time Tracker States
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(15 * 60);
+  // Question State & Refs
+  const [questionIndex, setQuestionIndex] = useState<number>(0);
+  const questionIndexRef = useRef<number>(0);
+  const [secondsLeft, setSecondsLeft] = useState<number>(15 * 60);
+
+  // Seed Question
+  const [currentQ, setCurrentQ] = useState<QuestionItem>({
+    q: `Let's discuss your experience in Full-Stack Engineering. What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?`,
+    keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
+    defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
+    keyConcept: 'Virtual DOM Diffing & Reconciliation',
+    alexNote: 'Strong knowledge of React reconciliation.',
+    emmaNote: 'Confident delivery, concise speech.',
+    sarahNote: 'Ready for deep architecture questions.'
+  });
+
+  // Keep question track text updated with selected role
+  useEffect(() => {
+    setCurrentQ((prev) => ({
+      ...prev,
+      q: `Let's discuss your experience in ${selectedTrack}. What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?`
+    }));
+  }, [selectedTrack]);
 
   // Sync Timer with Selected Duration
   useEffect(() => {
     setSecondsLeft(selectedDuration * 60);
   }, [selectedDuration]);
 
-  // Dynamic Question Pool
-  const [questionsList, setQuestionsList] = useState<QuestionItem[]>([
-    {
-      q: `Let's discuss your experience in ${selectedTrack}. What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?`,
-      keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
-      defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
-      keyConcept: 'Virtual DOM Diffing & Reconciliation',
-      alexNote: 'Strong knowledge of React reconciliation.',
-      emmaNote: 'Confident delivery, concise speech.',
-      sarahNote: 'Ready for deep architecture questions.'
-    },
-    {
-      q: 'Can you explain how indexing works in MongoDB and when you should use a compound index?',
-      keywords: ['mongodb', 'index', 'b-tree', 'compound', 'query', 'execution', 'performance', 'scan'],
-      defaultAnswer: 'MongoDB uses B-trees for indexes. Single field indexes work on one field, while compound indexes index multiple fields to optimize complex queries.',
-      keyConcept: 'ESR Rule & Compound B-Tree Indexing',
-      alexNote: 'Good understanding of index scan limitations.',
-      emmaNote: 'Pacing was natural, structured reasoning.',
-      sarahNote: 'Advancing difficulty level to Senior.'
-    },
-    {
-      q: 'How do you handle rate limiting in a microservices backend built with Node.js and Redis?',
-      keywords: ['redis', 'token bucket', 'rate limit', 'sliding window', 'headers', '429', 'throttle'],
-      defaultAnswer: 'I implement a token bucket or sliding window algorithm using Redis to keep a centralized counter per IP or API key.',
-      keyConcept: 'Redis Token Bucket & HTTP 429',
-      alexNote: 'Flawless Redis sliding window architecture.',
-      emmaNote: 'Zero hesitations, authoritative tone.',
-      sarahNote: 'Candidate clears technical bar with high marks.'
-    }
-  ]);
-
-  const currentQ = questionsList[questionIndex] || questionsList[0];
-
   // LIVE DYNAMIC METRICS STATE
-  const [liveAnswer, setLiveAnswer] = useState(currentQ?.defaultAnswer || '');
-  const [liveAccuracy, setLiveAccuracy] = useState(92);
-  const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
-  const [liveGrammar, setLiveGrammar] = useState('Clear & Technical');
+  const [liveAnswer, setLiveAnswer] = useState<string>(currentQ.defaultAnswer);
+  const [liveAccuracy, setLiveAccuracy] = useState<number>(92);
+  const [liveCorrection, setLiveCorrection] = useState<string>('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
+  const [liveGrammar, setLiveGrammar] = useState<string>('Clear & Technical');
   const [liveScores, setLiveScores] = useState({ comm: 88, tech: 92, conf: 90, prob: 86 });
-  const [liveFiller, setLiveFiller] = useState(1);
-  const [liveWpm, setLiveWpm] = useState(136);
-  const [liveEmotion, setLiveEmotion] = useState('Calm & Focused');
-  const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response via Agora VAD loop.');
+  const [liveFiller, setLiveFiller] = useState<number>(1);
+  const [liveWpm, setLiveWpm] = useState<number>(136);
+  const [liveEmotion, setLiveEmotion] = useState<string>('Calm & Focused');
+  const [liveDecision, setLiveDecision] = useState<string>('Active evaluation in progress. AI analyzing candidate response.');
 
-  // Infinite Fallback Question Generator
-  const generateDynamicQuestion = (index: number, previousAnswer: string): QuestionItem => {
-    const topics = [
-      {
-        q: 'How do you ensure zero-downtime database migrations and data consistency across distributed services?',
-        concept: 'Distributed Data Consistency & Schema Versioning',
-        keywords: ['migration', 'consistency', 'downtime', 'database', 'replica', 'transaction']
-      },
-      {
-        q: 'Could you walk me through your strategy for caching and mitigating cache stampede in high-concurrency architectures?',
-        concept: 'Cache Stampede & Distributed Mutexes',
-        keywords: ['caching', 'stampede', 'redis', 'mutex', 'ttl', 'concurrency']
-      },
-      {
-        q: 'How do you design an asynchronous, event-driven architecture using Kafka or RabbitMQ, and handle poison pill messages?',
-        concept: 'Dead Letter Queues & Event Streaming',
-        keywords: ['event', 'kafka', 'queue', 'dead letter', 'async', 'retry']
-      },
-      {
-        q: 'When scaling WebSocket connections across multiple server instances, how do you handle pub/sub synchronizations?',
-        concept: 'Horizontal WebSocket Scaling & Pub/Sub',
-        keywords: ['websocket', 'pubsub', 'socket', 'scaling', 'redis', 'cluster']
-      },
-      {
-        q: 'How would you detect and fix memory leaks and performance bottlenecks in high-throughput Node.js microservices?',
-        concept: 'Garbage Collection & Profiling Diagnostics',
-        keywords: ['memory leak', 'profiling', 'v8', 'heap', 'garbage collection', 'throughput']
-      }
-    ];
-
-    const pick = topics[index % topics.length];
-    return {
-      q: pick.q,
-      keywords: pick.keywords,
-      defaultAnswer: 'I focus on resilient architecture, graceful degradation, and distributed telemetry.',
-      keyConcept: pick.concept,
-      alexNote: `Evaluating architectural depth on ${pick.concept}.`,
-      emmaNote: 'Maintains composure under deep cross-examination.',
-      sarahNote: 'Assessing high-scale engineering decision tradeoffs.'
-    };
-  };
-
-  // Load Candidate Name
+  // Load Candidate Name safely
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const saved = localStorage.getItem('user') || localStorage.getItem('currentUser');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('user') || localStorage.getItem('currentUser');
+      if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.name) setCandidateName(parsed.name);
-      } catch (e) {
-        console.error(e);
       }
+    } catch (e) {
+      console.error(e);
     }
   }, []);
 
-  // Agora Real-Time Voice Session Function
+  // Agora Real-Time Voice Function
   const startAgoraCall = async (targetChannel: string) => {
-    let client: any = null;
-    let audioTrack: any = null;
-
     try {
       const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
 
-      // 1. Fetch dynamic token from backend
       const tokenRes = await fetch(`${BACKEND_URL}/api/agora/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channel_name: targetChannel, uid: 0 })
       });
-      
+
       if (!tokenRes.ok) throw new Error('Failed to fetch Agora token');
       const data = await tokenRes.json();
 
-      // 2. Create Agora client and join channel
-      client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       setAgoraClient(client);
 
       await client.join(data.app_id, targetChannel, data.token, 0);
 
-      // 3. Create and publish local microphone audio track
-      audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
       setLocalAudioTrack(audioTrack);
       await client.publish([audioTrack]);
-      setIsAgoraConnected(true);
 
-      // 4. Trigger backend to bring AI Agent into the channel and store agent_id safely
       const agentRes = await fetch(`${BACKEND_URL}/api/agora/start-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -238,53 +167,50 @@ export default function FullLiveInterviewRoom() {
       if (agentRes.ok) {
         const agentData = await agentRes.json();
         const extractedAgentId = agentData.agent_id || agentData.data?.agent_id || agentData.data?.id;
-        if (extractedAgentId) {
+        if (extractedAgentId && typeof window !== 'undefined') {
           localStorage.setItem('active_agent_id', extractedAgentId);
         }
       }
 
-      // 5. Subscribe to incoming AI Agent audio stream automatically via VAD
-      client.on('user-published', async (user: any, mediaType: string) => {
+      // Explicit 'audio' | 'video' type to avoid TypeScript error
+      client.on('user-published', async (user: any, mediaType: 'audio' | 'video') => {
         await client.subscribe(user, mediaType);
         if (mediaType === 'audio') {
           try {
             user.audioTrack.play();
             setIsAiSpeaking(true);
+            isAiSpeakingRef.current = true;
           } catch (audioErr) {
             console.warn('Playback error:', audioErr);
           }
         }
       });
 
-      client.on('user-unpublished', (user: any, mediaType: string) => {
+      client.on('user-unpublished', (user: any, mediaType: 'audio' | 'video') => {
         if (mediaType === 'audio') {
           setIsAiSpeaking(false);
+          isAiSpeakingRef.current = false;
         }
       });
-
-      client.on('connection-state-change', (curState: string) => {
-        if (curState === 'DISCONNECTED') {
-          setIsAgoraConnected(false);
-        }
-      });
-
     } catch (err) {
       console.warn('Agora WebRTC initialization issue:', err);
     }
   };
 
-  // Safe Text-To-Speech with Echo Prevention
-  const speakText = (text: string) => {
+  // Safe Speech Engine
+  const speakText = useCallback((text: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMuted) return;
 
     window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
 
     utterance.onstart = () => {
       setIsAiSpeaking(true);
+      isAiSpeakingRef.current = true;
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -294,6 +220,7 @@ export default function FullLiveInterviewRoom() {
 
     utterance.onend = () => {
       setIsAiSpeaking(false);
+      isAiSpeakingRef.current = false;
       if (!isMicMuted && recognitionRef.current) {
         try {
           recognitionRef.current.start();
@@ -303,6 +230,7 @@ export default function FullLiveInterviewRoom() {
 
     utterance.onerror = () => {
       setIsAiSpeaking(false);
+      isAiSpeakingRef.current = false;
       if (!isMicMuted && recognitionRef.current) {
         try {
           recognitionRef.current.start();
@@ -311,18 +239,99 @@ export default function FullLiveInterviewRoom() {
     };
 
     window.speechSynthesis.speak(utterance);
-  };
+  }, [isSpeakerMuted, isMicMuted]);
 
-  // Trigger question speech whenever questionIndex advances
+  // Handle End Call & Cleanup
+  const handleEndCall = useCallback(async () => {
+    try {
+      if (localAudioTrack) {
+        localAudioTrack.close();
+      }
+      if (agoraClient) {
+        await agoraClient.leave();
+      }
+    } catch (err) {
+      console.warn('Error disconnecting Agora client:', err);
+    }
+
+    if (typeof window !== 'undefined') {
+      const agentId = localStorage.getItem('active_agent_id');
+      if (agentId) {
+        try {
+          await fetch(`${BACKEND_URL}/api/agora/stop-agent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent_id: agentId })
+          });
+          localStorage.removeItem('active_agent_id');
+        } catch (e) {
+          console.error('Error stopping agent:', e);
+        }
+      }
+    }
+    router.push('/results');
+  }, [localAudioTrack, agoraClient, router]);
+
+  // Dynamic Backend Question Fetcher
+  const fetchAndSpeakNextQuestion = useCallback(async (spokenAnswer: string) => {
+    if (secondsLeft <= 0 || isFetchingRef.current) return;
+
+    isFetchingRef.current = true;
+    const nextIdx = questionIndexRef.current + 1;
+    questionIndexRef.current = nextIdx;
+    setQuestionIndex(nextIdx);
+
+    setLiveDecision('AI analyzing response... drafting next technical question.');
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/interview/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: selectedTrack,
+          previous_answer: spokenAnswer,
+          question_index: nextIdx
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const nextQuestionText = data.question || data.q || 'Can you elaborate on your experience with system architecture and concurrency?';
+
+        const newQuestionObj: QuestionItem = {
+          q: nextQuestionText,
+          keywords: Array.isArray(data.keywords) && data.keywords.length > 0 ? data.keywords : ['architecture', 'performance', 'scaling', 'reliability'],
+          defaultAnswer: 'I prioritize modular architecture, distributed caching, and automated testing.',
+          keyConcept: data.concept || 'System Resiliency & Microservices Architecture',
+          alexNote: `Diving into architectural tradeoffs for question #${nextIdx + 1}.`,
+          emmaNote: 'Maintains composure and structured communication.',
+          sarahNote: 'Assessing senior engineering decision-making.'
+        };
+
+        setCurrentQ(newQuestionObj);
+        speakText(newQuestionObj.q);
+      } else {
+        const fallbackText = `Let's advance to topic ${nextIdx + 1}. How do you ensure high availability and prevent single points of failure in distributed architectures?`;
+        setCurrentQ((prev) => ({
+          ...prev,
+          q: fallbackText,
+          keyConcept: 'High Availability & Fault Tolerance'
+        }));
+        speakText(fallbackText);
+      }
+    } catch (err) {
+      console.warn('Backend question fetch error:', err);
+    } finally {
+      isFetchingRef.current = false;
+    }
+  }, [secondsLeft, selectedTrack, speakText]);
+
+  // Initial Question Speak
   useEffect(() => {
     if (isConfiguring) return;
-    if (secondsLeft <= 0) return;
-
     const timer = setTimeout(() => {
-      if (currentQ?.q) {
-        speakText(currentQ.q);
-      }
-    }, 500);
+      speakText(currentQ.q);
+    }, 600);
 
     return () => {
       clearTimeout(timer);
@@ -330,22 +339,22 @@ export default function FullLiveInterviewRoom() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [isConfiguring, questionIndex, isSpeakerMuted]);
+  }, [isConfiguring, speakText, currentQ.q]);
 
-  // LIVE SPEECH RECOGNITION + CONTINUOUS DURATION AUTO-ADVANCE
+  // Speech Recognition & Silence Detection
   useEffect(() => {
     if (isConfiguring || typeof window === 'undefined') return;
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) return;
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRec();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
-      if (isAiSpeaking) return;
+      if (isAiSpeakingRef.current || isFetchingRef.current) return;
 
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -357,13 +366,14 @@ export default function FullLiveInterviewRoom() {
         setLiveAnswer(spokenText);
 
         const lower = spokenText.toLowerCase();
-        const matched = (currentQ?.keywords || []).filter((kw) => lower.includes(kw));
-        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / Math.max(1, currentQ?.keywords?.length || 1)) * 35)));
+        const activeKeywords = currentQ.keywords || [];
+        const matched = activeKeywords.filter((kw) => lower.includes(kw));
+        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / Math.max(1, activeKeywords.length)) * 35)));
         setLiveAccuracy(matchRatio);
 
         const words = spokenText.split(/\s+/).length;
         setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
-        
+
         const fillerMatches = spokenText.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
         setLiveFiller(fillerMatches.length);
 
@@ -374,69 +384,27 @@ export default function FullLiveInterviewRoom() {
           prob: Math.min(96, 82 + matched.length * 3)
         });
 
-        if (matched.length >= 3) {
-          setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Advancing question difficulty.`);
+        if (matched.length >= 2) {
+          setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Advancing question topic.`);
           setLiveGrammar('Sharp & Structured');
           setLiveDecision('AI Agents approve response depth. Advancing to next evaluation topic.');
         } else {
-          setLiveCorrection(`Try mentioning relevant terms like: ${(currentQ?.keywords || []).slice(0, 3).join(', ')}.`);
+          setLiveCorrection(`Try mentioning relevant terms like: ${activeKeywords.slice(0, 3).join(', ')}.`);
           setLiveGrammar('Developing Argument');
           setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
         }
 
-        // AUTO ADVANCE: Jab tak timer bacha hai ya call end na ho, har answer ke 1.8s silence par agla question aayega
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
-        silenceTimerRef.current = setTimeout(async () => {
-          // Timer check
-          if (secondsLeft <= 0) {
-            handleEndCall();
-            return;
-          }
-
-          const nextIdx = questionIndex + 1;
-
-          // Agar static list khatam ho jaye, toh naya dynamic question generate karke append karein
-          if (nextIdx >= questionsList.length) {
-            try {
-              const res = await fetch(`${BACKEND_URL}/api/interview/question`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  role: selectedTrack,
-                  previous_answer: spokenText,
-                  question_index: nextIdx
-                })
-              });
-
-              if (res.ok) {
-                const data = await res.json();
-                const fetchedQ: QuestionItem = {
-                  q: data.question || data.q || generateDynamicQuestion(nextIdx, spokenText).q,
-                  keywords: data.keywords || ['architecture', 'tradeoffs', 'performance', 'scaling'],
-                  defaultAnswer: 'In my architecture, I prioritize horizontal scaling, idempotency, and automated fallbacks.',
-                  keyConcept: data.concept || 'System Resiliency & Microservices Tradeoffs',
-                  alexNote: 'Diving deeper into production scalability tradeoffs.',
-                  emmaNote: 'Calm under complex architectural prompts.',
-                  sarahNote: 'Assessing technical leadership readiness.'
-                };
-                setQuestionsList((prev) => [...prev, fetchedQ]);
-              } else {
-                setQuestionsList((prev) => [...prev, generateDynamicQuestion(nextIdx, spokenText)]);
-              }
-            } catch (err) {
-              setQuestionsList((prev) => [...prev, generateDynamicQuestion(nextIdx, spokenText)]);
-            }
-          }
-
-          setQuestionIndex(nextIdx);
+        silenceTimerRef.current = setTimeout(() => {
+          fetchAndSpeakNextQuestion(spokenText);
         }, 1800);
       }
     };
 
     recognition.onerror = (e: any) => console.log('Speech Recognition:', e.error);
 
-    if (!isMicMuted && !isAiSpeaking) {
+    if (!isMicMuted) {
       try {
         recognition.start();
       } catch (err) {}
@@ -454,9 +422,9 @@ export default function FullLiveInterviewRoom() {
         recognition.stop();
       } catch (err) {}
     };
-  }, [isConfiguring, isMicMuted, questionIndex, isAiSpeaking, questionsList, secondsLeft]);
+  }, [isConfiguring, isMicMuted, fetchAndSpeakNextQuestion, currentQ.keywords]);
 
-  // Real Webcam initialization
+  // Webcam initialization
   useEffect(() => {
     let stream: MediaStream | null = null;
 
@@ -464,7 +432,7 @@ export default function FullLiveInterviewRoom() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 1280, height: 720 },
-          audio: false,
+          audio: false
         });
         mediaStreamRef.current = stream;
         if (userVideoRef.current) {
@@ -492,7 +460,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isVideoOff]);
 
-  // Audio Canvas Visualizer
+  // Canvas Wave Visualizer
   useEffect(() => {
     if (isConfiguring) return;
     const canvas = canvasRef.current;
@@ -549,7 +517,7 @@ export default function FullLiveInterviewRoom() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isConfiguring, isMicMuted]);
 
-  // Timer countdown: Auto End when time runs out
+  // Timer Countdown
   useEffect(() => {
     if (isConfiguring) return;
     const interval = setInterval(() => {
@@ -563,7 +531,7 @@ export default function FullLiveInterviewRoom() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isConfiguring]);
+  }, [isConfiguring, handleEndCall]);
 
   const formatTimer = (s: number) => {
     const min = Math.floor(s / 60);
@@ -571,39 +539,9 @@ export default function FullLiveInterviewRoom() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // Handle End Call & Cleanup Agora session
-  const handleEndCall = async () => {
-    try {
-      if (localAudioTrack) {
-        localAudioTrack.close();
-      }
-      if (agoraClient) {
-        await agoraClient.leave();
-      }
-    } catch (err) {
-      console.warn('Error disconnecting Agora client:', err);
-    }
-    
-    const agentId = localStorage.getItem('active_agent_id');
-    if (agentId) {
-      try {
-        await fetch(`${BACKEND_URL}/api/agora/stop-agent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent_id: agentId })
-        });
-        localStorage.removeItem('active_agent_id');
-      } catch (e) {
-        console.error('Error stopping agent:', e);
-      }
-    }
-    router.push('/results');
-  };
-
   return (
     <div className="h-screen w-screen bg-[#040711] text-slate-200 font-sans flex flex-col overflow-hidden select-none">
-      
-      {/* PRE-INTERVIEW CONFIGURATION MODAL */}
+      {/* CONFIGURATION MODAL */}
       {isConfiguring && (
         <div className="absolute inset-0 z-50 bg-[#040711]/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
           <div className="max-w-2xl w-full bg-slate-950 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
@@ -683,10 +621,6 @@ export default function FullLiveInterviewRoom() {
               onClick={() => {
                 const generatedChannel = `jynex-room-${Date.now()}`;
                 setChannelName(generatedChannel);
-                setSessionData({
-                  startTime: Date.now(),
-                  sessionId: `INT-${Date.now()}`
-                });
                 setIsConfiguring(false);
                 startAgoraCall(generatedChannel);
               }}
@@ -718,7 +652,6 @@ export default function FullLiveInterviewRoom() {
           </div>
         </div>
 
-        {/* Center Timer */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-slate-300 font-mono text-sm bg-slate-900/90 px-3.5 py-1.5 rounded-xl border border-slate-800 shadow-inner">
             <Clock size={15} className="text-cyan-400" />
@@ -743,8 +676,6 @@ export default function FullLiveInterviewRoom() {
 
       {/* MAIN VIEWPORT */}
       <div className="flex-1 flex overflow-hidden">
-        
-        {/* LEFT NAV SIDEBAR */}
         <aside className="w-52 border-r border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 hidden lg:flex">
           <nav className="space-y-1.5">
             <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
@@ -778,13 +709,10 @@ export default function FullLiveInterviewRoom() {
           </div>
         </aside>
 
-        {/* CENTER COLUMN: TILES + TRACKER + COLLABORATION */}
+        {/* CENTER TILES */}
         <main className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gradient-to-b from-[#060a16] via-[#050812] to-[#03050c]">
-          
-          {/* VIDEO CALL STREAM TILES */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 shrink-0">
-            
-            {/* AI Speaking Avatar Tile */}
+            {/* AI Avatar */}
             <div className={`bg-slate-950 border rounded-2xl relative overflow-hidden shadow-xl flex flex-col justify-between p-3.5 transition-all ${
               isAiSpeaking ? 'border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.25)]' : 'border-slate-800'
             }`}>
@@ -798,16 +726,13 @@ export default function FullLiveInterviewRoom() {
                     : 'text-slate-400 bg-slate-900/80 border-slate-800'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
-                  {isAiSpeaking ? 'Speaking Live...' : 'Listening via Agora VAD'}
+                  {isAiSpeaking ? 'Speaking Live...' : 'Listening via VAD'}
                 </span>
               </div>
 
-              {/* Glowing Dynamic Orb Avatar with Speaking Motion */}
               <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
                 <div className={`absolute rounded-full transition-all duration-700 ${
-                  isAiSpeaking 
-                    ? 'w-48 h-48 bg-cyan-500/30 blur-3xl animate-pulse' 
-                    : 'w-32 h-32 bg-blue-600/10 blur-2xl'
+                  isAiSpeaking ? 'w-48 h-48 bg-cyan-500/30 blur-3xl animate-pulse' : 'w-32 h-32 bg-blue-600/10 blur-2xl'
                 }`} />
                 <div className={`relative rounded-full p-1 transition-transform duration-300 ${
                   isAiSpeaking ? 'scale-110 shadow-[0_0_40px_#06b6d4]' : 'scale-95'
@@ -835,7 +760,7 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* Candidate Real Webcam Tile with Fallback Avatar */}
+            {/* Candidate Webcam */}
             <div className="bg-slate-950 border border-slate-800 rounded-2xl relative overflow-hidden shadow-xl flex flex-col justify-between p-3.5">
               <div className="w-full flex justify-between items-center text-xs z-10">
                 <span className="text-[10px] text-slate-400 font-mono bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
@@ -888,17 +813,14 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
             </div>
-
           </div>
 
-          {/* CALL CONTROLS DOCK */}
+          {/* CALL CONTROLS */}
           <div className="h-12 bg-slate-950/90 border border-slate-800/80 rounded-xl px-4 flex items-center justify-center gap-3 shrink-0 shadow-lg">
             <button
               onClick={() => setIsMicMuted(!isMicMuted)}
               className={`w-9 h-9 rounded-lg flex items-center justify-center transition border ${
-                isMicMuted
-                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
-                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                isMicMuted ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
               {isMicMuted ? <MicOff size={15} /> : <Mic size={15} />}
@@ -907,9 +829,7 @@ export default function FullLiveInterviewRoom() {
             <button
               onClick={() => setIsVideoOff(!isVideoOff)}
               className={`w-9 h-9 rounded-lg flex items-center justify-center transition border ${
-                isVideoOff
-                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
-                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                isVideoOff ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
               {isVideoOff ? <VideoOff size={15} /> : <Video size={15} />}
@@ -924,9 +844,7 @@ export default function FullLiveInterviewRoom() {
                 }
               }}
               className={`w-9 h-9 rounded-lg flex items-center justify-center transition border ${
-                isSpeakerMuted
-                  ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30'
-                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                isSpeakerMuted ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
               {isSpeakerMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
@@ -935,9 +853,7 @@ export default function FullLiveInterviewRoom() {
             <button
               onClick={() => setIsScreenSharing(!isScreenSharing)}
               className={`w-9 h-9 rounded-lg flex items-center justify-center transition border ${
-                isScreenSharing
-                  ? 'bg-cyan-600 text-white border-cyan-400 shadow-cyan-500/20'
-                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                isScreenSharing ? 'bg-cyan-600 text-white border-cyan-400 shadow-cyan-500/20' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
               <MonitorUp size={15} />
@@ -951,7 +867,7 @@ export default function FullLiveInterviewRoom() {
             </button>
           </div>
 
-          {/* REAL-TIME DYNAMIC QUESTION CORRECTION & CONCEPT TRACKER */}
+          {/* DYNAMIC QUESTION TRACKER */}
           <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
               <div className="flex items-center gap-2">
@@ -971,7 +887,7 @@ export default function FullLiveInterviewRoom() {
                   <MessageSquare size={12} className="text-blue-400" /> Live Captured Speech
                 </span>
                 <p className="text-slate-200 text-[11px] leading-relaxed italic bg-slate-950/40 p-2 rounded-lg border border-slate-800/60 max-h-16 overflow-y-auto">
-                  "{liveAnswer}"
+                  {`"${liveAnswer}"`}
                 </p>
               </div>
 
@@ -1045,7 +961,6 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* Dynamic AI Decision Box */}
             <div className="bg-gradient-to-r from-cyan-950/40 via-purple-950/30 to-blue-950/40 border border-cyan-500/30 rounded-xl p-3 text-center">
               <div className="flex items-center justify-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wide">
                 <Zap size={14} className="animate-pulse text-cyan-400" />
@@ -1054,13 +969,10 @@ export default function FullLiveInterviewRoom() {
               <p className="text-xs text-slate-300 mt-1 font-medium">{liveDecision}</p>
             </div>
           </div>
-
         </main>
 
-        {/* RIGHT SIDEBAR: REAL-TIME DYNAMIC METRICS */}
+        {/* RIGHT METRICS SIDEBAR */}
         <aside className="w-80 border-l border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 overflow-y-auto hidden xl:flex space-y-4">
-          
-          {/* LIVE ANALYSIS DYNAMIC METRICS */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
@@ -1077,10 +989,7 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.comm}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" 
-                  style={{ width: `${liveScores.comm}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.comm}%` }} />
               </div>
             </div>
 
@@ -1092,10 +1001,7 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.tech}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" 
-                  style={{ width: `${liveScores.tech}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.tech}%` }} />
               </div>
             </div>
 
@@ -1107,10 +1013,7 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.conf}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" 
-                  style={{ width: `${liveScores.conf}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.conf}%` }} />
               </div>
             </div>
 
@@ -1122,10 +1025,7 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.prob}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" 
-                  style={{ width: `${liveScores.prob}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.prob}%` }} />
               </div>
             </div>
 
@@ -1148,7 +1048,6 @@ export default function FullLiveInterviewRoom() {
             </div>
           </div>
 
-          {/* DYNAMIC TRANSCRIPTIONS STREAM */}
           <div className="space-y-2 pt-2 border-t border-slate-800 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between pb-1">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
@@ -1161,20 +1060,19 @@ export default function FullLiveInterviewRoom() {
               <div className="bg-gradient-to-r from-blue-950/40 to-slate-900/80 border border-blue-500/30 p-2.5 rounded-xl space-y-1">
                 <span className="text-[10px] font-bold text-blue-400 block">AI Interviewer (Speaking)</span>
                 <p className="text-white font-medium leading-snug">
-                  "{currentQ?.q}"
+                  {`"${currentQ?.q}"`}
                 </p>
               </div>
 
               <div className="bg-slate-900/40 border border-slate-800/60 p-2.5 rounded-xl space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 block">{candidateName} (Live Speech)</span>
                 <p className="text-slate-300 leading-snug italic">
-                  "{liveAnswer}"
+                  {`"${liveAnswer}"`}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* VOICE ACTIVITY SINE WAVE */}
           <div className="space-y-2 pt-2 border-t border-slate-800">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300">
               <span className="flex items-center gap-1.5"><Mic size={14} className="text-cyan-400" /> Voice Activity</span>
@@ -1187,9 +1085,7 @@ export default function FullLiveInterviewRoom() {
               <canvas ref={canvasRef} width={260} height={36} className="w-full h-9" />
             </div>
           </div>
-
         </aside>
-
       </div>
     </div>
   );
