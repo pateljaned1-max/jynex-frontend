@@ -495,7 +495,7 @@ export default function FullLiveInterviewRoom() {
     }
   };
 
-  // Advance to next question function (triggered by 1.8s silence or Next Question button)
+  // Advance to next question function (triggered automatically by 1.8s silence)
   const advanceQuestion = () => {
     if (isEndingRef.current) return;
     if (silenceTimerRef.current) {
@@ -1241,14 +1241,6 @@ export default function FullLiveInterviewRoom() {
               }`}
             >
               <MonitorUp size={15} />
-            </button>
-
-            <button
-              onClick={advanceQuestion}
-              className="px-3.5 h-9 rounded-lg bg-cyan-600/25 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/30 font-medium text-xs flex items-center gap-1.5 transition shadow-lg shadow-cyan-600/10 ml-2"
-              title="Proceed to next question immediately"
-            >
-              <Play size={13} fill="currentColor" /> Next Question
             </button>
 
             <button
