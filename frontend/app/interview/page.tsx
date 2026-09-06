@@ -42,8 +42,8 @@ export interface QuestionItem {
   defaultAnswer: string;
   keyConcept: string;
   alexNote: string;
-  emmaNote: string;
-  sarahNote: string;
+  danielNote: string;
+  michaelNote: string;
 }
 
 // Comprehensive technical question bank per track
@@ -55,8 +55,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
       keyConcept: 'Virtual DOM Diffing & Reconciliation',
       alexNote: 'Strong knowledge of React reconciliation.',
-      emmaNote: 'Confident delivery, concise speech.',
-      sarahNote: 'Ready for deep architecture questions.'
+      danielNote: 'Confident delivery, concise speech.',
+      michaelNote: 'Ready for deep architecture questions.'
     },
     {
       q: 'Can you explain how indexing works in MongoDB and when you should use a compound index?',
@@ -64,8 +64,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'MongoDB uses B-trees for indexes. Single field indexes work on one field, while compound indexes index multiple fields to optimize complex queries.',
       keyConcept: 'ESR Rule & Compound B-Tree Indexing',
       alexNote: 'Good understanding of index scan limitations.',
-      emmaNote: 'Pacing was natural, structured reasoning.',
-      sarahNote: 'Advancing difficulty level to Senior.'
+      danielNote: 'Pacing was natural, structured reasoning.',
+      michaelNote: 'Advancing difficulty level to Senior.'
     },
     {
       q: 'How do you handle rate limiting in a microservices backend built with Node.js and Redis?',
@@ -73,8 +73,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I implement a token bucket or sliding window algorithm using Redis to keep a centralized counter per IP or API key.',
       keyConcept: 'Redis Token Bucket & HTTP 429',
       alexNote: 'Flawless Redis sliding window architecture.',
-      emmaNote: 'Zero hesitations, authoritative tone.',
-      sarahNote: 'Candidate clears technical bar with high marks.'
+      danielNote: 'Zero hesitations, authoritative tone.',
+      michaelNote: 'Candidate clears technical bar with high marks.'
     },
     {
       q: 'When managing application state in complex React apps, how do you evaluate React Context vs Redux Toolkit vs Zustand, and how do you prevent unwanted component re-renders?',
@@ -82,8 +82,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'Context is great for low-frequency global data like theme or auth. For complex high-frequency updates, Zustand or Redux Toolkit with atomic state selectors and React.memo prevent subtree re-rendering.',
       keyConcept: 'Atomic State Management & Re-render Minimization',
       alexNote: 'Deep appreciation of state atomicity and rendering lifecycles.',
-      emmaNote: 'Logical breakdown comparing trade-offs naturally.',
-      sarahNote: 'Shows practical software craftsmanship experience.'
+      danielNote: 'Logical breakdown comparing trade-offs naturally.',
+      michaelNote: 'Shows practical software craftsmanship experience.'
     },
     {
       q: 'Could you walk me through the Node.js Event Loop phases, specifically how libuv prioritizes the Microtask queue over the Macrotask queue?',
@@ -91,8 +91,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'The Node.js event loop runs in distinct phases: timers, pending callbacks, poll, check, and close. Between every phase, libuv drains the microtask queue—prioritizing process.nextTick and Promise callbacks before executing macrotasks.',
       keyConcept: 'libuv Event Loop & Microtask Draining',
       alexNote: 'Spot-on explanation of process.nextTick and promise draining.',
-      emmaNote: 'Articulate delivery on an intricate low-level topic.',
-      sarahNote: 'Solid understanding of backend runtime internals.'
+      danielNote: 'Articulate delivery on an intricate low-level topic.',
+      michaelNote: 'Solid understanding of backend runtime internals.'
     },
     {
       q: 'How do Server-Side Rendering (SSR), Static Site Generation (SSG), and Incremental Static Regeneration (ISR) differ in Next.js, and how do you troubleshoot hydration errors?',
@@ -100,8 +100,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'SSG generates static HTML at build time, SSR creates HTML per-request on the server, and ISR revalidates static pages in the background after a specified interval. Hydration errors occur when server-rendered HTML diverges from initial client state.',
       keyConcept: 'Rendering Strategies & Client-Server Hydration',
       alexNote: 'Comprehensive understanding of modern Next.js rendering architectures.',
-      emmaNote: 'Concise and structured answer without hesitation.',
-      sarahNote: 'Demonstrates practical production experience with Next.js.'
+      danielNote: 'Concise and structured answer without hesitation.',
+      michaelNote: 'Demonstrates practical production experience with Next.js.'
     },
     {
       q: 'How do you handle database concurrency, race conditions, and idempotency in an e-commerce checkout flow with multiple simultaneous write requests?',
@@ -109,8 +109,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I use database transactions with optimistic locking via version numbers, combined with distributed idempotency keys in Redis to ensure duplicate requests produce consistent results without double deductions.',
       keyConcept: 'Optimistic Concurrency & Idempotency Keys',
       alexNote: 'Robust solution covering both database locks and network retries.',
-      emmaNote: 'Methodical risk mitigation perspective.',
-      sarahNote: 'Instills confidence in handling critical business financial workflows.'
+      danielNote: 'Methodical risk mitigation perspective.',
+      michaelNote: 'Instills confidence in handling critical business financial workflows.'
     },
     {
       q: 'What are the main security vulnerabilities you safeguard against in modern full-stack web applications, and how do you mitigate XSS, CSRF, and CORS issues?',
@@ -118,8 +118,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I mitigate XSS through automated HTML sanitization and Content Security Policy headers, defend against CSRF with SameSite HttpOnly cookies or anti-CSRF tokens, and enforce strict origin whitelisting on CORS headers.',
       keyConcept: 'Defense-in-Depth Web Security & CSP',
       alexNote: 'Strong modern security hygiene across frontend and backend.',
-      emmaNote: 'Calm, authoritative communication of compliance standards.',
-      sarahNote: 'High marks on security awareness and threat mitigation.'
+      danielNote: 'Calm, authoritative communication of compliance standards.',
+      michaelNote: 'High marks on security awareness and threat mitigation.'
     },
     {
       q: 'When building real-time applications, how do you decide between WebSockets, Server-Sent Events (SSE), and Long Polling?',
@@ -127,8 +127,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'WebSockets provide full-duplex bidirectional communication best for collaborative apps or chat. SSE is lightweight and ideal for server-to-client unidirectional streams like AI generation over HTTP/2. Long polling is a fallback when neither is supported.',
       keyConcept: 'Real-Time Communication Protocol Trade-offs',
       alexNote: 'Excellent architectural comparison between duplex and unidirectional streams.',
-      emmaNote: 'Fluent articulation of network protocol capabilities.',
-      sarahNote: 'Technically well-rounded across network layers.'
+      danielNote: 'Fluent articulation of network protocol capabilities.',
+      michaelNote: 'Technically well-rounded across network layers.'
     },
     {
       q: 'Tell me about a challenging production outage or performance bottleneck you debugged in the past. What was your triage methodology?',
@@ -136,8 +136,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I isolate issues using APM metrics and distributed logs, roll back recent deployments if critical, reproduce in a staging sandbox with profiling tools, and publish a blameless post-mortem with preventative alerts.',
       keyConcept: 'Production Incident Triage & Blameless Post-Mortem',
       alexNote: 'Pragmatic engineering discipline during high-pressure situations.',
-      emmaNote: 'High emotional intelligence, focuses on system recovery and learning.',
-      sarahNote: 'Strong leadership traits and production maturity.'
+      danielNote: 'High emotional intelligence, focuses on system recovery and learning.',
+      michaelNote: 'Strong leadership traits and production maturity.'
     }
   ],
   'Distributed Systems & Microservices': [
@@ -147,8 +147,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'The CAP theorem states that under a network partition, a system must choose between consistency and availability. The PACELC theorem extends this by noting that even under normal operation, one must choose between latency and consistency.',
       keyConcept: 'PACELC Theorem & Distributed Trade-offs',
       alexNote: 'Thorough understanding of partition tolerance and replication latency.',
-      emmaNote: 'Analytical and precise delivery.',
-      sarahNote: 'Understands fundamental distributed systems philosophy.'
+      danielNote: 'Analytical and precise delivery.',
+      michaelNote: 'Understands fundamental distributed systems philosophy.'
     },
     {
       q: 'In an event-driven architecture utilizing Apache Kafka, how do you ensure strict message ordering, handle partition keys, and manage dead-letter queues?',
@@ -156,8 +156,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'Kafka guarantees ordering within a single partition. I assign consistent partition keys to related entities and handle unprocessable messages via dead-letter queues after retries to prevent blocking consumer offsets.',
       keyConcept: 'Kafka Partition Ordering & DLQ Patterns',
       alexNote: 'Mastery of Kafka partitioning and failure recovery mechanisms.',
-      emmaNote: 'Articulate explanation of asynchronous message handling.',
-      sarahNote: 'Enterprise-grade message streaming knowledge.'
+      danielNote: 'Articulate explanation of asynchronous message handling.',
+      michaelNote: 'Enterprise-grade message streaming knowledge.'
     },
     {
       q: 'How does the SAGA pattern solve distributed transaction challenges across microservices, and when should you choose Orchestration over Choreography?',
@@ -165,8 +165,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'SAGA breaks a distributed transaction into local transactions with compensating actions. Orchestration uses a central coordinator best for complex multi-step workflows, while Choreography relies on peer events best for simpler decoupled systems.',
       keyConcept: 'SAGA Orchestration vs Choreography',
       alexNote: 'Clear distinction between centralized coordination and decentralized event flows.',
-      emmaNote: 'Natural conversational pace with structured arguments.',
-      sarahNote: 'Proven architectural expertise in distributed state.'
+      danielNote: 'Natural conversational pace with structured arguments.',
+      michaelNote: 'Proven architectural expertise in distributed state.'
     },
     {
       q: 'How do you prevent cache stampede, also known as the thundering herd problem, in a high-traffic distributed caching layer?',
@@ -174,8 +174,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I use distributed mutex locks so only one worker recalculates the cache, alongside probabilistic early expiration algorithms like XFetch and background cache warmers to prevent sudden cache expirations.',
       keyConcept: 'Cache Stampede Mitigation & Mutex Locking',
       alexNote: 'Advanced knowledge of distributed caching failure scenarios.',
-      emmaNote: 'Confident delivery of sophisticated technical remedies.',
-      sarahNote: 'Prevents catastrophic production cascade failures.'
+      danielNote: 'Confident delivery of sophisticated technical remedies.',
+      michaelNote: 'Prevents catastrophic production cascade failures.'
     },
     {
       q: 'How do modern API Gateways and Service Meshes implement Circuit Breaker patterns and Dynamic Rate Limiting to prevent cascading failures?',
@@ -183,8 +183,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'Circuit breakers track failure rates across closed, open, and half-open states. If error thresholds exceed limits, requests fail fast with predefined fallback responses, shielding downstream services from resource exhaustion.',
       keyConcept: 'Circuit Breaker State Machine & Cascade Prevention',
       alexNote: 'Precise grasp of closed/open/half-open circuit states.',
-      emmaNote: 'Excellent structure and clarity of thought.',
-      sarahNote: 'Critical skill for resilient microservices.'
+      danielNote: 'Excellent structure and clarity of thought.',
+      michaelNote: 'Critical skill for resilient microservices.'
     }
   ],
   'Database Architecture (SQL vs NoSQL)': [
@@ -194,8 +194,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'PostgreSQL provides strict ACID guarantees and rich relational modeling for complex transactional data. MongoDB excels at flexible document hierarchies, while Cassandra provides masterless linear write scalability at the cost of eventual consistency.',
       keyConcept: 'Relational ACID vs Wide-Column Eventual Consistency',
       alexNote: 'Balanced trade-off evaluation without dogmatism.',
-      emmaNote: 'Crisp articulation of schema design decisions.',
-      sarahNote: 'Pragmatic database selection mindset.'
+      danielNote: 'Crisp articulation of schema design decisions.',
+      michaelNote: 'Pragmatic database selection mindset.'
     },
     {
       q: 'Could you compare B-Trees against Log-Structured Merge-Trees (LSM-Trees), and explain how write amplification impacts high-write databases?',
@@ -203,8 +203,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'B-Trees optimize for random reads by maintaining balanced disk-based node pages, incurring random write costs. LSM-Trees append writes to an in-memory MemTable and commit log, flushing SSTables sequentially and compacting later to minimize write amplification.',
       keyConcept: 'B-Tree vs LSM-Tree Storage Engines',
       alexNote: 'In-depth mastery of disk I/O, MemTables, and compaction.',
-      emmaNote: 'Explains complex engine internals with simplicity.',
-      sarahNote: 'Deep systems engineering capability.'
+      danielNote: 'Explains complex engine internals with simplicity.',
+      michaelNote: 'Deep systems engineering capability.'
     },
     {
       q: 'How do you read and interpret PostgreSQL EXPLAIN ANALYZE execution plans to diagnose slow queries and eliminate sequential scans?',
@@ -212,8 +212,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I review actual execution times versus estimated planner costs, looking for sequential scans on large tables, costly disk-based hash joins, and misestimated row counts, then add targeted indexes or adjust memory work_mem parameters.',
       keyConcept: 'Query Planner Cost Analysis & Index Tuning',
       alexNote: 'Practical mastery of query optimization and cost analysis.',
-      emmaNote: 'Strong problem-solving diagnostic walkthrough.',
-      sarahNote: 'High value for performance-critical production databases.'
+      danielNote: 'Strong problem-solving diagnostic walkthrough.',
+      michaelNote: 'High value for performance-critical production databases.'
     },
     {
       q: 'Why is external connection pooling like PgBouncer necessary in high-concurrency PostgreSQL environments, and how does transaction pooling work?',
@@ -221,8 +221,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'PostgreSQL spawns a separate OS process per client connection, which consumes memory and causes context switching overhead under heavy load. PgBouncer maintains a lean pool of server processes and recycles them at the transaction level.',
       keyConcept: 'Process-per-Connection Overhead & PgBouncer Pooling',
       alexNote: 'Essential knowledge of PostgreSQL operational mechanics.',
-      emmaNote: 'Direct, confident, and professional.',
-      sarahNote: 'Strong infrastructure and operational competency.'
+      danielNote: 'Direct, confident, and professional.',
+      michaelNote: 'Strong infrastructure and operational competency.'
     }
   ],
   'AI & Cloud Infrastructure': [
@@ -232,8 +232,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I split documents using semantic chunking with overlap, embed chunks into a vector database, perform hybrid vector-keyword retrieval, and pass top candidates through a cross-encoder re-ranker before feeding the prompt to the LLM.',
       keyConcept: 'Hybrid Retrieval & Cross-Encoder Re-Ranking',
       alexNote: 'Comprehensive architecture covering semantic chunking and re-ranking.',
-      emmaNote: 'Clear, modern AI systems literacy.',
-      sarahNote: 'Immediate capability to deliver generative AI solutions.'
+      danielNote: 'Clear, modern AI systems literacy.',
+      michaelNote: 'Immediate capability to deliver generative AI solutions.'
     },
     {
       q: 'How do vector databases perform approximate nearest neighbor (ANN) search using Hierarchical Navigable Small World (HNSW) graphs versus IVF indexes?',
@@ -241,8 +241,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'HNSW builds a multi-layer geometric graph where upper layers enable fast long-range hops and lower layers perform fine-grained neighbor exploration. IVF clusters vectors into Voronoi cells to prune the search space during query time.',
       keyConcept: 'HNSW Multi-Layer Graphs & IVF Vector Indexing',
       alexNote: 'Outstanding algorithmic grasp of high-dimensional vector search.',
-      emmaNote: 'Articulate delivery of complex mathematical structures.',
-      sarahNote: 'Strong candidate for advanced AI engineering roles.'
+      danielNote: 'Articulate delivery of complex mathematical structures.',
+      michaelNote: 'Strong candidate for advanced AI engineering roles.'
     },
     {
       q: 'What strategies do you deploy to optimize LLM serving latency, such as continuous batching, KV caching, and PagedAttention?',
@@ -250,8 +250,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I use serving frameworks like vLLM with PagedAttention to eliminate memory fragmentation in key-value caches, alongside continuous batching to schedule incoming generation tokens dynamically without waiting for full sequence completion.',
       keyConcept: 'PagedAttention & Continuous Batching Scheduling',
       alexNote: 'Cutting-edge knowledge of GPU memory management and LLM serving.',
-      emmaNote: 'Fluent, cutting-edge technical communication.',
-      sarahNote: 'Rare expertise in high-throughput AI inference deployment.'
+      danielNote: 'Fluent, cutting-edge technical communication.',
+      michaelNote: 'Rare expertise in high-throughput AI inference deployment.'
     },
     {
       q: 'How do you structure secure cloud infrastructure using Infrastructure as Code (Terraform), private VPC subnets, and automated IAM least-privilege policies?',
@@ -259,8 +259,8 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       defaultAnswer: 'I organize modular Terraform code with remote state locking in S3/DynamoDB, place workloads in isolated private subnets behind NAT gateways, and enforce strict role-based IAM policies with time-bound temporary credentials.',
       keyConcept: 'Modular IaC Architecture & Zero-Trust Cloud Networks',
       alexNote: 'Solid adherence to cloud security best practices and IaC patterns.',
-      emmaNote: 'Clear, reassuring operational tone.',
-      sarahNote: 'Ensures cloud security governance and auditability.'
+      danielNote: 'Clear, reassuring operational tone.',
+      michaelNote: 'Ensures cloud security governance and auditability.'
     }
   ]
 };
@@ -275,8 +275,8 @@ const generateDynamicQuestion = (track: string, index: number): QuestionItem => 
       defaultAnswer: 'I would configure active-active multi-region deployment with latency-based DNS routing, automated database cross-region replication, and health check-driven circuit breakers with predefined RTO and RPO targets.',
       keyConcept: `Multi-Region Disaster Recovery & Geo-Redundancy #${qNum}`,
       alexNote: 'Strong grasp of cross-region high-availability patterns.',
-      emmaNote: 'Confident articulation of operational risk mitigation.',
-      sarahNote: 'Ready for staff-level architectural responsibility.'
+      danielNote: 'Confident articulation of operational risk mitigation.',
+      michaelNote: 'Ready for staff-level architectural responsibility.'
     },
     {
       q: `Scenario #${qNum} for ${track}: Suppose your service experiences an unexpected 15x traffic surge causing cascading connection timeouts. Walk me through your step-by-step diagnostic and remediation process.`,
@@ -284,8 +284,8 @@ const generateDynamicQuestion = (track: string, index: number): QuestionItem => 
       defaultAnswer: 'I would immediately inspect APM metrics for bottleneck identification, enable degraded mode or rate limiting, trigger horizontal pod autoscaling, and inspect database connection pools.',
       keyConcept: `Emergency Incident Response & Concurrency Bottlenecks #${qNum}`,
       alexNote: 'Calm and methodical triage approach under pressure.',
-      emmaNote: 'Crisp communication during high-stress system degradation.',
-      sarahNote: 'Demonstrates deep ownership of production reliability.'
+      danielNote: 'Crisp communication during high-stress system degradation.',
+      michaelNote: 'Demonstrates deep ownership of production reliability.'
     },
     {
       q: `Scenario #${qNum} for ${track}: How do you design and enforce end-to-end security, data encryption at rest and in transit, and secret rotation across microservices?`,
@@ -293,8 +293,8 @@ const generateDynamicQuestion = (track: string, index: number): QuestionItem => 
       defaultAnswer: 'I adopt a Zero Trust model with mutual TLS for inter-service communication, envelope encryption using KMS keys, and automated secret rotation via cloud secret management services.',
       keyConcept: `Zero-Trust Architecture & Secret Rotation #${qNum}`,
       alexNote: 'Excellent adherence to defense-in-depth security principles.',
-      emmaNote: 'Professional and structured explanation of security controls.',
-      sarahNote: 'Fully aligns with enterprise security compliance standards.'
+      danielNote: 'Professional and structured explanation of security controls.',
+      michaelNote: 'Fully aligns with enterprise security compliance standards.'
     },
     {
       q: `Scenario #${qNum} for ${track}: Behavioral Deep-Dive: Describe a scenario where you had to negotiate technical debt versus delivering new business features under strict executive deadlines.`,
@@ -302,8 +302,8 @@ const generateDynamicQuestion = (track: string, index: number): QuestionItem => 
       defaultAnswer: 'I quantified the risk of technical debt in terms of system outages and team velocity, proposing an incremental refactoring plan alongside core feature delivery to align engineering health with business objectives.',
       keyConcept: `Technical Debt Negotiation & Business Value Alignment #${qNum}`,
       alexNote: 'Pragmatic balance between code quality and business delivery velocity.',
-      emmaNote: 'Empathetic stakeholder management and clear prioritization.',
-      sarahNote: 'Demonstrates strong leadership potential and strategic judgment.'
+      danielNote: 'Empathetic stakeholder management and clear prioritization.',
+      michaelNote: 'Demonstrates strong leadership potential and strategic judgment.'
     }
   ];
   return scenarios[index % scenarios.length];
@@ -316,7 +316,7 @@ export default function FullLiveInterviewRoom() {
   const [isConfiguring, setIsConfiguring] = useState(true);
   const [selectedTrack, setSelectedTrack] = useState('Full-Stack Engineering (React & Node.js)');
   const [selectedDuration, setSelectedDuration] = useState(15);
-  const [targetAgent, setTargetAgent] = useState<'sarah' | 'alex' | 'emma'>('alex');
+  const [targetAgent, setTargetAgent] = useState<'michael' | 'alex' | 'daniel'>('alex');
 
   // Call Controls State
   const [isMicMuted, setIsMicMuted] = useState(false);
@@ -540,8 +540,8 @@ export default function FullLiveInterviewRoom() {
               defaultAnswer: data.suggested_answer || 'Comprehensive architectural response.',
               keyConcept: data.concept || 'Dynamic AI Follow-up',
               alexNote: data.alex_note || 'Assessing technical depth on dynamic topic.',
-              emmaNote: data.emma_note || 'Evaluating clarity of explanation and tone.',
-              sarahNote: data.sarah_note || 'Assessing industry best practices.'
+              danielNote: data.daniel_note || 'Evaluating clarity of explanation and tone.',
+              michaelNote: data.michael_note || 'Assessing industry best practices.'
             }
           }));
         }
@@ -676,7 +676,7 @@ export default function FullLiveInterviewRoom() {
         } else {
           setLiveCorrection(`Try mentioning relevant terms like: ${q.keywords.slice(0, 3).join(', ')}.`);
           setLiveGrammar('Developing Argument');
-          setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
+          setLiveDecision('Evaluating answer depth... Michael recommending follow-up clarification.');
         }
 
         // SILENCE DETECTION: 1.8 second shant rehne par agla question auto advance hoga
@@ -995,8 +995,8 @@ export default function FullLiveInterviewRoom() {
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Lead AI Interviewer</label>
                 <div className="grid grid-cols-3 gap-3">
-                  {(['sarah', 'alex', 'emma'] as const).map((agentKey) => {
-                    const agent = agentKey === 'sarah' ? { name: 'Sarah', role: 'Hiring Lead' } : agentKey === 'alex' ? { name: 'Alex', role: 'Technical Lead' } : { name: 'Emma', role: 'Behavioral Lead' };
+                  {(['michael', 'alex', 'daniel'] as const).map((agentKey) => {
+                    const agent = agentKey === 'michael' ? { name: 'Michael', role: 'Hiring Lead' } : agentKey === 'alex' ? { name: 'Alex', role: 'Technical Lead' } : { name: 'Daniel', role: 'Behavioral Lead' };
                     const isSelected = targetAgent === agentKey;
                     return (
                       <button
@@ -1163,7 +1163,7 @@ export default function FullLiveInterviewRoom() {
               <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/70 backdrop-blur-md p-2 rounded-xl border border-slate-800/60">
                 <span className="text-slate-200 font-semibold flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${isAiSpeaking ? 'bg-emerald-400 shadow-[0_0_6px_#10b981]' : 'bg-slate-500'}`} />
-                  {targetAgent === 'sarah' ? 'Sarah (Hiring Lead)' : targetAgent === 'alex' ? 'Alex (Tech Lead)' : 'Emma (Behavioral Lead)'}
+                  {targetAgent === 'michael' ? 'Michael (Hiring Lead)' : targetAgent === 'alex' ? 'Alex (Tech Lead)' : 'Daniel (Behavioral Lead)'}
                 </span>
                 <div className="flex items-center gap-1 h-3">
                   <span className={`w-0.5 bg-cyan-400 rounded-full ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
@@ -1356,8 +1356,8 @@ export default function FullLiveInterviewRoom() {
                   <UserCheck size={15} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">Behavioural AI (Emma)</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.emmaNote}</p>
+                  <h4 className="text-xs font-bold text-white">Behavioural AI (Daniel)</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.danielNote}</p>
                 </div>
               </div>
 
@@ -1366,8 +1366,8 @@ export default function FullLiveInterviewRoom() {
                   <Briefcase size={15} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">Hiring Manager AI (Sarah)</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.sarahNote}</p>
+                  <h4 className="text-xs font-bold text-white">Hiring Manager AI (Michael)</h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.michaelNote}</p>
                 </div>
               </div>
             </div>
