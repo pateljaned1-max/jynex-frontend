@@ -37,7 +37,7 @@ import {
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
 
 /* -------------------------------------------------------------------------- */
-/*                     FULL-FRAME LIVE AI AVATAR ENGINE                       */
+/*                    FULL-FRAME LIVE AI AVATAR ENGINE                        */
 /* -------------------------------------------------------------------------- */
 
 interface LiveAiAvatarProps {
@@ -305,7 +305,6 @@ function LiveAiAvatar({
           ctx.fillStyle = 'rgba(245, 243, 238, 0.94)';
           ctx.fill();
 
-          // Subtle interdental separation lines
           ctx.strokeStyle = 'rgba(120, 100, 95, 0.35)';
           ctx.lineWidth = 0.75;
           ctx.beginPath();
@@ -361,7 +360,7 @@ function LiveAiAvatar({
         ctx.fillStyle = personaConfig.lipColor;
         ctx.fill();
 
-        // Lip specular highlight
+        // Lip highlight
         ctx.beginPath();
         ctx.ellipse(mouthCenterX, mouthCenterY + openH + baseMouthH * 0.35, mw * 0.35, baseMouthH * 0.18, 0, 0, Math.PI * 2);
         ctx.fillStyle = personaConfig.lipHighlight;
@@ -526,7 +525,7 @@ function LiveAiAvatar({
 }
 
 /* -------------------------------------------------------------------------- */
-/*                     QUESTION BANK & GENERATION LOGIC                       */
+/*                    QUESTION BANK & GENERATION LOGIC                        */
 /* -------------------------------------------------------------------------- */
 
 export interface QuestionItem {
@@ -718,7 +717,7 @@ const generateDynamicQuestion = (track: string, index: number): QuestionItem => 
 };
 
 /* -------------------------------------------------------------------------- */
-/*                     MAIN LIVE INTERVIEW ROOM COMPONENT                     */
+/*                    MAIN LIVE INTERVIEW ROOM COMPONENT                      */
 /* -------------------------------------------------------------------------- */
 
 export default function FullLiveInterviewRoom() {
@@ -919,7 +918,7 @@ export default function FullLiveInterviewRoom() {
     }
   };
 
-  // Advance to next question function (triggered automatically by silence or Next Question button)
+  // Advance to next question function (triggered automatically by silence)
   const advanceQuestion = () => {
     if (isEndingRef.current) return;
     if (silenceTimerRef.current) {
@@ -1655,14 +1654,6 @@ export default function FullLiveInterviewRoom() {
             </button>
 
             <button
-              onClick={advanceQuestion}
-              className="px-3.5 h-9 rounded-lg bg-cyan-600/25 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/30 font-medium text-xs flex items-center gap-1.5 transition shadow-lg shadow-cyan-600/10 ml-2"
-              title="Proceed to next question immediately"
-            >
-              <Play size={13} fill="currentColor" /> Next Question
-            </button>
-
-            <button
               onClick={handleEndCall}
               className="px-4 h-9 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs flex items-center gap-1.5 transition shadow-lg shadow-rose-600/20 ml-2"
             >
@@ -1690,15 +1681,6 @@ export default function FullLiveInterviewRoom() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                     <MessageSquare size={12} className="text-blue-400" /> Live Captured Speech
                   </span>
-                  {liveAnswer && (
-                    <button
-                      onClick={advanceQuestion}
-                      className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold transition"
-                      title="Advance to next question immediately"
-                    >
-                      Next →
-                    </button>
-                  )}
                 </div>
                 <p className="text-slate-200 text-[11px] leading-relaxed italic bg-slate-950/40 p-2 rounded-lg border border-slate-800/60 max-h-16 overflow-y-auto">
                   "{liveAnswer || (isAiSpeaking ? `AI is asking Question #${questionIndex + 1}...` : 'Listening for your response...')}"
