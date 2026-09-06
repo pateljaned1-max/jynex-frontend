@@ -51,31 +51,31 @@ export interface QuestionItem {
 const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
   'Full-Stack Engineering (React & Node.js)': [
     {
-      q: "Let's begin with your core full-stack foundations. What programming languages and frameworks are you most comfortable with, and how does the React Virtual DOM diffing and reconciliation algorithm optimize frontend performance?",
-      keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation', 'fiber'],
-      defaultAnswer: 'I work mainly with TypeScript, React, and Node.js. React uses an in-memory Virtual DOM and the Fiber reconciler to compute minimal DOM diffs and batch updates before touching the real browser DOM.',
-      keyConcept: 'Virtual DOM Diffing & Fiber Reconciliation',
-      alexNote: 'Strong grasp of React reconciliation and batching mechanics.',
-      emmaNote: 'Clear delivery with confident, structured flow.',
-      sarahNote: 'Displays solid baseline fundamentals for full-stack tasks.'
+      q: "Let's discuss your experience in Full-Stack Engineering (React & Node.js). What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?",
+      keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
+      defaultAnswer: 'I mainly work with JavaScript and Python. The Virtual DOM creates an in-memory representation and calculates minimal diffs before repainting.',
+      keyConcept: 'Virtual DOM Diffing & Reconciliation',
+      alexNote: 'Strong knowledge of React reconciliation.',
+      emmaNote: 'Confident delivery, concise speech.',
+      sarahNote: 'Ready for deep architecture questions.'
     },
     {
-      q: 'Can you explain how indexing works in MongoDB at the storage level, and in what situations should you design a compound index according to the ESR rule?',
-      keywords: ['mongodb', 'index', 'b-tree', 'compound', 'query', 'execution', 'performance', 'scan', 'esr'],
-      defaultAnswer: 'MongoDB indexes utilize B-Trees for logarithmic lookups. Compound indexes cover multi-field queries and must follow the ESR rule: Equality first, Sort second, and Range fields last to minimize in-memory sorting.',
+      q: 'Can you explain how indexing works in MongoDB and when you should use a compound index?',
+      keywords: ['mongodb', 'index', 'b-tree', 'compound', 'query', 'execution', 'performance', 'scan'],
+      defaultAnswer: 'MongoDB uses B-trees for indexes. Single field indexes work on one field, while compound indexes index multiple fields to optimize complex queries.',
       keyConcept: 'ESR Rule & Compound B-Tree Indexing',
-      alexNote: 'Accurate explanation of ESR query optimization and B-Tree structure.',
-      emmaNote: 'Thoughtful pacing, avoids filler phrasing.',
-      sarahNote: 'Ready for deep database query tuning discussions.'
+      alexNote: 'Good understanding of index scan limitations.',
+      emmaNote: 'Pacing was natural, structured reasoning.',
+      sarahNote: 'Advancing difficulty level to Senior.'
     },
     {
-      q: 'How do you design a distributed rate-limiting system for microservices built with Node.js and Redis under high concurrent traffic?',
-      keywords: ['redis', 'token bucket', 'rate limit', 'sliding window', 'headers', '429', 'throttle', 'lua'],
-      defaultAnswer: 'I implement a sliding window log or token bucket algorithm using Redis atomic Lua scripts. The system tracks request timestamps per API key or IP, setting standard 429 Retry-After headers when quotas are exceeded.',
-      keyConcept: 'Redis Sliding Window & HTTP 429 Throttling',
-      alexNote: 'Flawless Redis Lua script and sliding window architecture.',
-      emmaNote: 'Authoritative technical tone and concise delivery.',
-      sarahNote: 'Demonstrates senior-level distributed backend proficiency.'
+      q: 'How do you handle rate limiting in a microservices backend built with Node.js and Redis?',
+      keywords: ['redis', 'token bucket', 'rate limit', 'sliding window', 'headers', '429', 'throttle'],
+      defaultAnswer: 'I implement a token bucket or sliding window algorithm using Redis to keep a centralized counter per IP or API key.',
+      keyConcept: 'Redis Token Bucket & HTTP 429',
+      alexNote: 'Flawless Redis sliding window architecture.',
+      emmaNote: 'Zero hesitations, authoritative tone.',
+      sarahNote: 'Candidate clears technical bar with high marks.'
     },
     {
       q: 'When managing application state in complex React apps, how do you evaluate React Context vs Redux Toolkit vs Zustand, and how do you prevent unwanted component re-renders?',
@@ -375,18 +375,25 @@ export default function FullLiveInterviewRoom() {
     return generateDynamicQuestion(selectedTrack, questionIndex);
   }, [selectedTrack, questionIndex, dynamicQuestions]);
 
-  // Sync refs to avoid stale closures in Web Speech API & callbacks
-  const isAiSpeakingRef = useRef(isAiSpeaking);
-  useEffect(() => { isAiSpeakingRef.current = isAiSpeaking; }, [isAiSpeaking]);
-
+  // Synchronized refs so speech recognition & synthesis never suffer from race conditions or closures
+  const isAiSpeakingRef = useRef(false);
   const isMicMutedRef = useRef(isMicMuted);
   useEffect(() => { isMicMutedRef.current = isMicMuted; }, [isMicMuted]);
 
-  const isEndingRef = useRef(isEnding);
-  useEffect(() => { isEndingRef.current = isEnding; }, [isEnding]);
+  const isSpeakerMutedRef = useRef(isSpeakerMuted);
+  useEffect(() => { isSpeakerMutedRef.current = isSpeakerMuted; }, [isSpeakerMuted]);
 
-  const secondsLeftRef = useRef(secondsLeft);
-  useEffect(() => { secondsLeftRef.current = secondsLeft; }, [secondsLeft]);
+  const isEndingRef = useRef(false);
+  const isRoomActiveRef = useRef(false);
+
+  const selectedTrackRef = useRef(selectedTrack);
+  useEffect(() => { selectedTrackRef.current = selectedTrack; }, [selectedTrack]);
+
+  const currentQRef = useRef(currentQ);
+  useEffect(() => { currentQRef.current = currentQ; }, [currentQ]);
+
+  const liveAnswerRef = useRef('');
+  const safetyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // LIVE DYNAMIC METRICS STATE
   const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
@@ -488,10 +495,54 @@ export default function FullLiveInterviewRoom() {
     }
   };
 
-  // Safe Text-To-Speech with Echo Prevention & Chrome Keep-Alive
+  // Advance to next question function (triggered by 1.8s silence or Next Question button)
+  const advanceQuestion = () => {
+    if (isEndingRef.current) return;
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+
+    setQuestionIndex((prev) => {
+      const nextIdx = prev + 1;
+
+      // Notify backend asynchronously
+      fetch(`${BACKEND_URL}/api/interview/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: selectedTrackRef.current,
+          previous_answer: liveAnswerRef.current,
+          question_index: nextIdx
+        })
+      })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && (data.question || data.q)) {
+          setDynamicQuestions((curr) => ({
+            ...curr,
+            [nextIdx]: {
+              q: data.question || data.q,
+              keywords: data.keywords || ['architecture', 'performance', 'system', 'tradeoff'],
+              defaultAnswer: data.suggested_answer || 'Comprehensive architectural response.',
+              keyConcept: data.concept || 'Dynamic AI Follow-up',
+              alexNote: data.alex_note || 'Assessing technical depth on dynamic topic.',
+              emmaNote: data.emma_note || 'Evaluating clarity of explanation and tone.',
+              sarahNote: data.sarah_note || 'Assessing industry best practices.'
+            }
+          }));
+        }
+      })
+      .catch((err) => console.warn('Backend question sync note:', err));
+
+      return nextIdx;
+    });
+  };
+
+  // Safe Text-To-Speech with Echo Prevention & Chrome Keep-Alive Watchdog
   const speakText = (text: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    if (isSpeakerMuted) return;
+    if (isSpeakerMutedRef.current) return;
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
@@ -501,34 +552,38 @@ export default function FullLiveInterviewRoom() {
     // Prevent Chrome garbage collection bug from cutting off speech
     (window as any).__activeUtterance = utterance;
 
+    const stopSpeaking = () => {
+      setIsAiSpeaking(false);
+      isAiSpeakingRef.current = false;
+      if (safetyTimerRef.current) {
+        clearTimeout(safetyTimerRef.current);
+        safetyTimerRef.current = null;
+      }
+    };
+
     utterance.onstart = () => {
       setIsAiSpeaking(true);
-      // AI bolte waqt mic ko pause rakhein taaki speech synthesize beech mein cut na ho
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {}
-      }
+      isAiSpeakingRef.current = true;
     };
 
     utterance.onend = () => {
-      setIsAiSpeaking(false);
-      // Question bolne ke baad candidate ka mic sunna start karein
-      if (!isMicMutedRef.current && !isEndingRef.current && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {}
-      }
+      stopSpeaking();
     };
 
     utterance.onerror = () => {
-      setIsAiSpeaking(false);
-      if (!isMicMutedRef.current && !isEndingRef.current && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {}
-      }
+      stopSpeaking();
     };
+
+    // Watchdog: In Chrome, speech synthesis can stall; ensure isAiSpeaking is NEVER stuck!
+    const wordCount = text.split(/\s+/).length;
+    const maxSpeechTime = Math.max(5000, (wordCount / 2.2) * 1000 + 2500);
+    if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
+    safetyTimerRef.current = setTimeout(() => {
+      if (isAiSpeakingRef.current) {
+        console.warn('SpeechSynthesis watchdog safety reset');
+        stopSpeaking();
+      }
+    }, maxSpeechTime);
 
     window.speechSynthesis.speak(utterance);
   };
@@ -539,6 +594,7 @@ export default function FullLiveInterviewRoom() {
 
     // Reset live captured speech display for each new question
     setLiveAnswer('');
+    liveAnswerRef.current = '';
 
     const timer = setTimeout(() => {
       speakText(currentQ.q);
@@ -550,22 +606,23 @@ export default function FullLiveInterviewRoom() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [isConfiguring, questionIndex, isSpeakerMuted, isEnding]);
+  }, [isConfiguring, questionIndex, isEnding]);
 
-  // LIVE SPEECH RECOGNITION + SILENCE DETECTION AUTO ADVANCE (UNLIMITED QUESTIONS)
+  // LIVE SPEECH RECOGNITION (PERSISTENT & BULLETPROOF)
   useEffect(() => {
-    if (isConfiguring || isEnding || typeof window === 'undefined') return;
+    if (isConfiguring || typeof window === 'undefined') return;
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
+    isRoomActiveRef.current = true;
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
-      // Agar AI bol raha ho ya interview end ho raha ho toh ignore karein
+      // While AI is speaking, ignore incoming sound so echo doesn't trigger answers
       if (isAiSpeakingRef.current || isEndingRef.current) return;
 
       let interimTranscript = '';
@@ -576,10 +633,12 @@ export default function FullLiveInterviewRoom() {
       if (interimTranscript.trim().length > 0) {
         const spokenText = interimTranscript;
         setLiveAnswer(spokenText);
+        liveAnswerRef.current = spokenText;
 
+        const q = currentQRef.current;
         const lower = spokenText.toLowerCase();
-        const matched = currentQ.keywords.filter((kw) => lower.includes(kw));
-        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / Math.max(1, currentQ.keywords.length)) * 35)));
+        const matched = q.keywords.filter((kw) => lower.includes(kw));
+        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / Math.max(1, q.keywords.length)) * 35)));
         setLiveAccuracy(matchRatio);
 
         const words = spokenText.split(/\s+/).length;
@@ -600,86 +659,51 @@ export default function FullLiveInterviewRoom() {
           setLiveGrammar('Sharp & Structured');
           setLiveDecision('AI Agents approve response depth. Advancing to next evaluation topic.');
         } else {
-          setLiveCorrection(`Try mentioning relevant terms like: ${currentQ.keywords.slice(0, 3).join(', ')}.`);
+          setLiveCorrection(`Try mentioning relevant terms like: ${q.keywords.slice(0, 3).join(', ')}.`);
           setLiveGrammar('Developing Argument');
           setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
         }
 
         // SILENCE DETECTION: 1.8 second shant rehne par agla question auto advance hoga
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-
         silenceTimerRef.current = setTimeout(() => {
-          if (isEndingRef.current || secondsLeftRef.current <= 0) return;
-
-          // UNLIMITED QUESTIONS: No upper limit check! Advances continuously throughout duration
-          setQuestionIndex((prev) => {
-            const nextIdx = prev + 1;
-
-            // Backend ko dynamic question progression notify karein
-            fetch(`${BACKEND_URL}/api/interview/question`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                role: selectedTrack,
-                previous_answer: spokenText,
-                question_index: nextIdx
-              })
-            })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data && (data.question || data.q)) {
-                setDynamicQuestions((curr) => ({
-                  ...curr,
-                  [nextIdx]: {
-                    q: data.question || data.q,
-                    keywords: data.keywords || ['architecture', 'performance', 'system', 'tradeoff'],
-                    defaultAnswer: data.suggested_answer || 'Comprehensive architectural response.',
-                    keyConcept: data.concept || 'Dynamic AI Follow-up',
-                    alexNote: data.alex_note || 'Assessing technical depth on dynamic topic.',
-                    emmaNote: data.emma_note || 'Evaluating clarity of explanation and tone.',
-                    sarahNote: data.sarah_note || 'Assessing industry best practices.'
-                  }
-                }));
-              }
-            })
-            .catch((err) => console.warn('Backend question sync note:', err));
-
-            return nextIdx;
-          });
+          advanceQuestion();
         }, 1800);
       }
     };
 
-    // Chrome auto-stop protection: restart recognition if ended by idle pause
+    // Auto-restart if Chrome naturally pauses recognition due to silence
     recognition.onend = () => {
-      if (!isAiSpeakingRef.current && !isMicMutedRef.current && !isEndingRef.current && secondsLeftRef.current > 0) {
+      if (isRoomActiveRef.current && !isEndingRef.current && !isMicMutedRef.current) {
         try {
           recognition.start();
         } catch (e) {}
       }
     };
 
-    recognition.onerror = (e: any) => console.log('Speech Recognition:', e.error);
+    recognition.onerror = (e: any) => {
+      console.log('Speech Recognition:', e.error);
+      if (e.error !== 'aborted' && isRoomActiveRef.current && !isEndingRef.current && !isMicMutedRef.current) {
+        setTimeout(() => {
+          try { recognition.start(); } catch (err) {}
+        }, 300);
+      }
+    };
 
-    if (!isMicMuted && !isAiSpeaking && !isEnding) {
-      try {
-        recognition.start();
-      } catch (err) {}
-    } else {
-      try {
-        recognition.stop();
-      } catch (err) {}
-    }
+    try {
+      recognition.start();
+    } catch (err) {}
 
     recognitionRef.current = recognition;
 
     return () => {
+      isRoomActiveRef.current = false;
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       try {
         recognition.stop();
       } catch (err) {}
     };
-  }, [isConfiguring, isMicMuted, questionIndex, isAiSpeaking, isEnding]);
+  }, [isConfiguring]);
 
   // Real Webcam initialization
   useEffect(() => {
@@ -812,6 +836,8 @@ export default function FullLiveInterviewRoom() {
   // Handle End Call & Cleanup Agora session
   const handleEndCall = async () => {
     setIsEnding(true);
+    isEndingRef.current = true;
+    isRoomActiveRef.current = false;
 
     if (recognitionRef.current) {
       try {
@@ -1215,6 +1241,14 @@ export default function FullLiveInterviewRoom() {
               }`}
             >
               <MonitorUp size={15} />
+            </button>
+
+            <button
+              onClick={advanceQuestion}
+              className="px-3.5 h-9 rounded-lg bg-cyan-600/25 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/30 font-medium text-xs flex items-center gap-1.5 transition shadow-lg shadow-cyan-600/10 ml-2"
+              title="Proceed to next question immediately"
+            >
+              <Play size={13} fill="currentColor" /> Next Question
             </button>
 
             <button
