@@ -1152,8 +1152,14 @@ export default function FullLiveInterviewRoom() {
                 } bg-gradient-to-tr from-cyan-400 via-blue-600 to-purple-600`}>
                   <div className="w-24 h-24 rounded-full bg-[#070b1a] flex items-center justify-center border border-cyan-300/40 overflow-hidden">
                     <img
-                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80"
-                      alt="AI Lead"
+                      src={
+                        targetAgent === 'michael'
+                          ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80'
+                          : targetAgent === 'daniel'
+                          ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80'
+                          : 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=250&q=80'
+                      }
+                      alt="AI Professional Interviewer"
                       className={`w-full h-full object-cover rounded-full transition-all ${isAiSpeaking ? 'brightness-110' : 'brightness-75'}`}
                     />
                   </div>
@@ -1479,7 +1485,7 @@ export default function FullLiveInterviewRoom() {
           <div className="space-y-2 pt-2 border-t border-slate-800 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between pb-1">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <CheckCircle2 size={14} className="text-cyan-400" /> Live Transcripts
+                <CheckCircle2 size= {14} className="text-cyan-400" /> Live Transcripts
               </span>
               <span className="text-[10px] text-cyan-400 font-mono font-medium">Q{questionIndex + 1} Continuous</span>
             </div>
