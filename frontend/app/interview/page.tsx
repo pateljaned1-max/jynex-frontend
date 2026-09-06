@@ -37,6 +37,16 @@ import {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
 
+interface QuestionItem {
+  q: string;
+  keywords: string[];
+  defaultAnswer: string;
+  keyConcept: string;
+  alexNote: string;
+  emmaNote: string;
+  sarahNote: string;
+}
+
 export default function FullLiveInterviewRoom() {
   const router = useRouter();
 
@@ -88,7 +98,8 @@ export default function FullLiveInterviewRoom() {
     setSecondsLeft(selectedDuration * 60);
   }, [selectedDuration]);
 
-  const questionsList = [
+  // Dynamic Question Pool
+  const [questionsList, setQuestionsList] = useState<QuestionItem[]>([
     {
       q: `Let's discuss your experience in ${selectedTrack}. What programming languages are you most comfortable with, and how does the React Virtual DOM optimize performance?`,
       keywords: ['react', 'virtual dom', 'javascript', 'performance', 'diff', 'state', 'render', 'reconciliation'],
@@ -116,12 +127,12 @@ export default function FullLiveInterviewRoom() {
       emmaNote: 'Zero hesitations, authoritative tone.',
       sarahNote: 'Candidate clears technical bar with high marks.'
     }
-  ];
+  ]);
 
   const currentQ = questionsList[questionIndex] || questionsList[0];
 
   // LIVE DYNAMIC METRICS STATE
-  const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
+  const [liveAnswer, setLiveAnswer] = useState(currentQ?.defaultAnswer || '');
   const [liveAccuracy, setLiveAccuracy] = useState(92);
   const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
   const [liveGrammar, setLiveGrammar] = useState('Clear & Technical');
@@ -130,6 +141,48 @@ export default function FullLiveInterviewRoom() {
   const [liveWpm, setLiveWpm] = useState(136);
   const [liveEmotion, setLiveEmotion] = useState('Calm & Focused');
   const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response via Agora VAD loop.');
+
+  // Infinite Fallback Question Generator
+  const generateDynamicQuestion = (index: number, previousAnswer: string): QuestionItem => {
+    const topics = [
+      {
+        q: 'How do you ensure zero-downtime database migrations and data consistency across distributed services?',
+        concept: 'Distributed Data Consistency & Schema Versioning',
+        keywords: ['migration', 'consistency', 'downtime', 'database', 'replica', 'transaction']
+      },
+      {
+        q: 'Could you walk me through your strategy for caching and mitigating cache stampede in high-concurrency architectures?',
+        concept: 'Cache Stampede & Distributed Mutexes',
+        keywords: ['caching', 'stampede', 'redis', 'mutex', 'ttl', 'concurrency']
+      },
+      {
+        q: 'How do you design an asynchronous, event-driven architecture using Kafka or RabbitMQ, and handle poison pill messages?',
+        concept: 'Dead Letter Queues & Event Streaming',
+        keywords: ['event', 'kafka', 'queue', 'dead letter', 'async', 'retry']
+      },
+      {
+        q: 'When scaling WebSocket connections across multiple server instances, how do you handle pub/sub synchronizations?',
+        concept: 'Horizontal WebSocket Scaling & Pub/Sub',
+        keywords: ['websocket', 'pubsub', 'socket', 'scaling', 'redis', 'cluster']
+      },
+      {
+        q: 'How would you detect and fix memory leaks and performance bottlenecks in high-throughput Node.js microservices?',
+        concept: 'Garbage Collection & Profiling Diagnostics',
+        keywords: ['memory leak', 'profiling', 'v8', 'heap', 'garbage collection', 'throughput']
+      }
+    ];
+
+    const pick = topics[index % topics.length];
+    return {
+      q: pick.q,
+      keywords: pick.keywords,
+      defaultAnswer: 'I focus on resilient architecture, graceful degradation, and distributed telemetry.',
+      keyConcept: pick.concept,
+      alexNote: `Evaluating architectural depth on ${pick.concept}.`,
+      emmaNote: 'Maintains composure under deep cross-examination.',
+      sarahNote: 'Assessing high-scale engineering decision tradeoffs.'
+    };
+  };
 
   // Load Candidate Name
   useEffect(() => {
@@ -232,7 +285,6 @@ export default function FullLiveInterviewRoom() {
 
     utterance.onstart = () => {
       setIsAiSpeaking(true);
-      // AI bolte waqt mic ko pause rakhein taaki speech synthesize beech mein cut na ho
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -242,7 +294,6 @@ export default function FullLiveInterviewRoom() {
 
     utterance.onend = () => {
       setIsAiSpeaking(false);
-      // Question bolne ke baad candidate ka mic sunna start karein
       if (!isMicMuted && recognitionRef.current) {
         try {
           recognitionRef.current.start();
@@ -262,12 +313,15 @@ export default function FullLiveInterviewRoom() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Trigger question speech on configuration close or questionIndex advance
+  // Trigger question speech whenever questionIndex advances
   useEffect(() => {
     if (isConfiguring) return;
+    if (secondsLeft <= 0) return;
 
     const timer = setTimeout(() => {
-      speakText(currentQ.q);
+      if (currentQ?.q) {
+        speakText(currentQ.q);
+      }
     }, 500);
 
     return () => {
@@ -278,7 +332,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isConfiguring, questionIndex, isSpeakerMuted]);
 
-  // LIVE SPEECH RECOGNITION + SILENCE DETECTION AUTO ADVANCE
+  // LIVE SPEECH RECOGNITION + CONTINUOUS DURATION AUTO-ADVANCE
   useEffect(() => {
     if (isConfiguring || typeof window === 'undefined') return;
 
@@ -291,7 +345,6 @@ export default function FullLiveInterviewRoom() {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
-      // Agar AI bol raha ho toh candidate input ignore karein
       if (isAiSpeaking) return;
 
       let interimTranscript = '';
@@ -304,8 +357,8 @@ export default function FullLiveInterviewRoom() {
         setLiveAnswer(spokenText);
 
         const lower = spokenText.toLowerCase();
-        const matched = currentQ.keywords.filter((kw) => lower.includes(kw));
-        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / currentQ.keywords.length) * 35)));
+        const matched = (currentQ?.keywords || []).filter((kw) => lower.includes(kw));
+        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / Math.max(1, currentQ?.keywords?.length || 1)) * 35)));
         setLiveAccuracy(matchRatio);
 
         const words = spokenText.split(/\s+/).length;
@@ -326,21 +379,27 @@ export default function FullLiveInterviewRoom() {
           setLiveGrammar('Sharp & Structured');
           setLiveDecision('AI Agents approve response depth. Advancing to next evaluation topic.');
         } else {
-          setLiveCorrection(`Try mentioning relevant terms like: ${currentQ.keywords.slice(0, 3).join(', ')}.`);
+          setLiveCorrection(`Try mentioning relevant terms like: ${(currentQ?.keywords || []).slice(0, 3).join(', ')}.`);
           setLiveGrammar('Developing Argument');
           setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
         }
 
-        // SILENCE DETECTION: 1.8 second shant rehne par agla question auto advance hoga
+        // AUTO ADVANCE: Jab tak timer bacha hai ya call end na ho, har answer ke 1.8s silence par agla question aayega
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
-        silenceTimerRef.current = setTimeout(() => {
-          setQuestionIndex((prev) => {
-            if (prev < questionsList.length - 1) {
-              const nextIdx = prev + 1;
+        silenceTimerRef.current = setTimeout(async () => {
+          // Timer check
+          if (secondsLeft <= 0) {
+            handleEndCall();
+            return;
+          }
 
-              // Backend ko dynamic question progression notify karein
-              fetch(`${BACKEND_URL}/api/interview/question`, {
+          const nextIdx = questionIndex + 1;
+
+          // Agar static list khatam ho jaye, toh naya dynamic question generate karke append karein
+          if (nextIdx >= questionsList.length) {
+            try {
+              const res = await fetch(`${BACKEND_URL}/api/interview/question`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -348,12 +407,29 @@ export default function FullLiveInterviewRoom() {
                   previous_answer: spokenText,
                   question_index: nextIdx
                 })
-              }).catch((err) => console.warn('Backend question sync note:', err));
+              });
 
-              return nextIdx;
+              if (res.ok) {
+                const data = await res.json();
+                const fetchedQ: QuestionItem = {
+                  q: data.question || data.q || generateDynamicQuestion(nextIdx, spokenText).q,
+                  keywords: data.keywords || ['architecture', 'tradeoffs', 'performance', 'scaling'],
+                  defaultAnswer: 'In my architecture, I prioritize horizontal scaling, idempotency, and automated fallbacks.',
+                  keyConcept: data.concept || 'System Resiliency & Microservices Tradeoffs',
+                  alexNote: 'Diving deeper into production scalability tradeoffs.',
+                  emmaNote: 'Calm under complex architectural prompts.',
+                  sarahNote: 'Assessing technical leadership readiness.'
+                };
+                setQuestionsList((prev) => [...prev, fetchedQ]);
+              } else {
+                setQuestionsList((prev) => [...prev, generateDynamicQuestion(nextIdx, spokenText)]);
+              }
+            } catch (err) {
+              setQuestionsList((prev) => [...prev, generateDynamicQuestion(nextIdx, spokenText)]);
             }
-            return prev;
-          });
+          }
+
+          setQuestionIndex(nextIdx);
         }, 1800);
       }
     };
@@ -378,7 +454,7 @@ export default function FullLiveInterviewRoom() {
         recognition.stop();
       } catch (err) {}
     };
-  }, [isConfiguring, isMicMuted, questionIndex, isAiSpeaking]);
+  }, [isConfiguring, isMicMuted, questionIndex, isAiSpeaking, questionsList, secondsLeft]);
 
   // Real Webcam initialization
   useEffect(() => {
@@ -473,11 +549,18 @@ export default function FullLiveInterviewRoom() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isConfiguring, isMicMuted]);
 
-  // Timer countdown
+  // Timer countdown: Auto End when time runs out
   useEffect(() => {
     if (isConfiguring) return;
     const interval = setInterval(() => {
-      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleEndCall();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, [isConfiguring]);
@@ -878,7 +961,7 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-mono">
-                Model: Jynex Evaluator v2.4 (Agora VAD Active)
+                Model: Jynex Evaluator v2.4 (Active Dynamic Evaluation)
               </span>
             </div>
 
@@ -912,7 +995,7 @@ export default function FullLiveInterviewRoom() {
                   </div>
                 </div>
                 <div className="mt-2 pt-1 border-t border-slate-800 text-[10px] text-slate-400">
-                  Concept: <span className="text-white font-medium">{currentQ.keyConcept}</span>
+                  Concept: <span className="text-white font-medium">{currentQ?.keyConcept}</span>
                 </div>
               </div>
             </div>
@@ -923,7 +1006,7 @@ export default function FullLiveInterviewRoom() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
                 <Zap size={14} className="text-purple-400" />
-                <span>Agent Collaboration System (Continuous VAD Flow)</span>
+                <span>Agent Collaboration System (Topic #{questionIndex + 1})</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
                 Shared Neural Context
@@ -937,7 +1020,7 @@ export default function FullLiveInterviewRoom() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white">Technical AI (Alex)</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.alexNote}</p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ?.alexNote}</p>
                 </div>
               </div>
 
@@ -947,7 +1030,7 @@ export default function FullLiveInterviewRoom() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white">Behavioural AI (Emma)</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.emmaNote}</p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ?.emmaNote}</p>
                 </div>
               </div>
 
@@ -957,7 +1040,7 @@ export default function FullLiveInterviewRoom() {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-white">Hiring Manager AI (Sarah)</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ.sarahNote}</p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{currentQ?.sarahNote}</p>
                 </div>
               </div>
             </div>
@@ -1071,14 +1154,14 @@ export default function FullLiveInterviewRoom() {
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-cyan-400" /> Live Transcripts
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">Continuous VAD</span>
+              <span className="text-[10px] text-slate-500 font-mono">Topic #{questionIndex + 1}</span>
             </div>
 
             <div className="space-y-2 overflow-y-auto max-h-52 pr-1 text-xs">
               <div className="bg-gradient-to-r from-blue-950/40 to-slate-900/80 border border-blue-500/30 p-2.5 rounded-xl space-y-1">
                 <span className="text-[10px] font-bold text-blue-400 block">AI Interviewer (Speaking)</span>
                 <p className="text-white font-medium leading-snug">
-                  "{currentQ.q}"
+                  "{currentQ?.q}"
                 </p>
               </div>
 
