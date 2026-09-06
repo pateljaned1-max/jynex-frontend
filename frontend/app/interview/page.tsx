@@ -325,6 +325,16 @@ export default function FullLiveInterviewRoom() {
   const [candidateName, setCandidateName] = useState('Candidate');
   const [cameraError, setCameraError] = useState<string | null>(null);
 
+  // Conversation History States for Evaluation
+  const [conversationHistory, setConversationHistory] = useState<Array<{ sender: string; text: string }>>([]);
+  const conversationHistoryRef = useRef<Array<{ sender: string; text: string }>>([]);
+
+  const recordDialogue = (sender: string, text: string) => {
+    if (!text || text.trim().length === 0) return;
+    conversationHistoryRef.current.push({ sender, text });
+    setConversationHistory([...conversationHistoryRef.current]);
+  };
+
   // Safe Session State
   const [sessionData, setSessionData] = useState<{
     startTime: number;
@@ -501,6 +511,10 @@ export default function FullLiveInterviewRoom() {
       silenceTimerRef.current = null;
     }
 
+    if (liveAnswerRef.current) {
+      recordDialogue('candidate', liveAnswerRef.current);
+    }
+
     setQuestionIndex((prev) => {
       const nextIdx = prev + 1;
 
@@ -517,10 +531,11 @@ export default function FullLiveInterviewRoom() {
       .then((res) => res.json())
       .then((data) => {
         if (data && (data.question || data.q)) {
+          const newQText = data.question || data.q;
           setDynamicQuestions((curr) => ({
             ...curr,
             [nextIdx]: {
-              q: data.question || data.q,
+              q: newQText,
               keywords: data.keywords || ['architecture', 'performance', 'system', 'tradeoff'],
               defaultAnswer: data.suggested_answer || 'Comprehensive architectural response.',
               keyConcept: data.concept || 'Dynamic AI Follow-up',
@@ -541,6 +556,8 @@ export default function FullLiveInterviewRoom() {
   const speakText = (text: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMutedRef.current) return;
+
+    recordDialogue('interviewer', text);
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
@@ -831,7 +848,7 @@ export default function FullLiveInterviewRoom() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // Handle End Call & Cleanup Agora session
+  // Handle End Call & Cleanup Agora session with backend AI Evaluation
   const handleEndCall = async () => {
     setIsEnding(true);
     isEndingRef.current = true;
@@ -871,8 +888,33 @@ export default function FullLiveInterviewRoom() {
       }
     }
 
-    // Persist session performance data for the /results analytics view
+    // REAL HUMAN-LIKE AI EVALUATION VIA BACKEND
     try {
+      const evalRes = await fetch(`${BACKEND_URL}/api/interview/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: selectedTrackRef.current,
+          difficulty: 'Senior',
+          persona: targetAgent,
+          conversation: conversationHistoryRef.current.length > 0
+            ? conversationHistoryRef.current
+            : [
+                { sender: 'interviewer', text: currentQRef.current.q },
+                { sender: 'candidate', text: liveAnswerRef.current || currentQRef.current.defaultAnswer }
+              ]
+        })
+      });
+
+      if (evalRes.ok) {
+        const evalData = await evalRes.json();
+        if (evalData.report) {
+          localStorage.setItem('interview_results', JSON.stringify(evalData.report));
+        }
+      }
+    } catch (err) {
+      console.warn('AI evaluation fallback:', err);
+      // Fallback local storage object if backend evaluation fails
       const overall = Math.round((liveScores.tech * 0.35) + (liveScores.comm * 0.3) + (liveScores.conf * 0.2) + (liveScores.prob * 0.15));
       const resultsData = {
         overall_score: overall,
@@ -891,8 +933,6 @@ export default function FullLiveInterviewRoom() {
         summary_feedback: `The candidate completed ${questionIndex + 1} questions during the ${selectedDuration}-minute evaluation for ${selectedTrack}. Demonstrated solid domain knowledge, technical fluency, and structured reasoning across all AI agent reviews.`
       };
       localStorage.setItem('interview_results', JSON.stringify(resultsData));
-    } catch (e) {
-      console.error('Error saving interview results:', e);
     }
 
     router.push('/results');
