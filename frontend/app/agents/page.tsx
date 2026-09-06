@@ -6,26 +6,18 @@ import { useRouter } from 'next/navigation';
 import {
   Bot,
   Sparkles,
-  Code2,
-  Briefcase,
-  UserCheck,
-  Zap,
   ArrowRight,
   Sliders,
   Play,
   Volume2,
-  CheckCircle2,
-  Cpu,
-  ShieldAlert,
-  Settings2,
-  MessageSquare
+  Cpu
 } from 'lucide-react';
 
 export default function AIAgentsDirectoryPage() {
   const router = useRouter();
 
   // Selected agent for live configuration preview
-  const [selectedAgentId, setSelectedAgentId] = useState<'alex' | 'sarah' | 'emma'>('alex');
+  const [selectedAgentId, setSelectedAgentId] = useState<'alex' | 'michael' | 'daniel'>('alex');
   const [difficulty, setDifficulty] = useState<'Standard' | 'Senior' | 'Staff'>('Senior');
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1.0);
   const [isAuditioning, setIsAuditioning] = useState<boolean>(false);
@@ -38,34 +30,34 @@ export default function AIAgentsDirectoryPage() {
       badge: 'Core Architecture & Coding',
       color: 'from-cyan-500 to-blue-600',
       borderGlow: 'border-cyan-500/40 shadow-cyan-500/15',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80',
       description: 'Specializes in algorithmic efficiency, real-time code evaluation, database indexing, and backend scalability.',
       specialties: ['React & Next.js', 'Python / Node.js', 'Distributed Systems', 'Data Structures', 'REST & GraphQL'],
       sampleAudio: 'Hello! I am Alex. I will evaluate your architecture depth, code performance, and runtime complexity.'
     },
     {
-      id: 'sarah',
-      name: 'Sarah',
+      id: 'michael',
+      name: 'Michael',
       role: 'Hiring Manager AI',
       badge: 'Leadership & System Design',
       color: 'from-amber-400 to-orange-600',
       borderGlow: 'border-amber-500/40 shadow-amber-500/15',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80',
       description: 'Focuses on strategic decision making, business-impact analysis, team ownership, and architectural trade-offs.',
       specialties: ['System Design', 'Project Ownership', 'Trade-off Analysis', 'Engineering Roadmaps', 'Cross-Team Comms'],
-      sampleAudio: 'Hi, I am Sarah. I look at how your technical choices drive production uptime and business milestones.'
+      sampleAudio: 'Hi, I am Michael. I look at how your technical choices drive production uptime and business milestones.'
     },
     {
-      id: 'emma',
-      name: 'Emma',
+      id: 'daniel',
+      name: 'Daniel',
       role: 'Behavioral & Culture AI',
       badge: 'Soft Skills & Leadership',
       color: 'from-purple-400 to-pink-600',
       borderGlow: 'border-purple-500/40 shadow-purple-500/15',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=250&q=80',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80',
       description: 'Evaluates emotional intelligence, conflict resolution, verbal clarity, pace, confidence, and filler word frequency.',
       specialties: ['Conflict Management', 'Confidence Scoring', 'Culture Fit', 'STAR Methodology', 'Active Listening'],
-      sampleAudio: 'Welcome! I am Emma. I will guide our behavioral scenarios to observe how you tackle collaboration challenges.'
+      sampleAudio: 'Welcome! I am Daniel. I will guide our behavioral scenarios to observe how you tackle collaboration challenges.'
     }
   ];
 
@@ -78,10 +70,15 @@ export default function AIAgentsDirectoryPage() {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = voiceSpeed;
-    utterance.pitch = selectedAgentId === 'alex' ? 1.05 : selectedAgentId === 'sarah' ? 0.95 : 1.15;
+    utterance.pitch = selectedAgentId === 'alex' ? 1.05 : selectedAgentId === 'michael' ? 0.95 : 1.15;
     utterance.onend = () => setIsAuditioning(false);
     utterance.onerror = () => setIsAuditioning(false);
     window.speechSynthesis.speak(utterance);
+  };
+
+  const handleMockInterview = (agentId: string) => {
+    localStorage.setItem('preferred_agent', agentId);
+    router.push('/interview');
   };
 
   return (
@@ -129,7 +126,7 @@ export default function AIAgentsDirectoryPage() {
               JYNEX AI Agent Neural Matrix
             </h1>
             <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-              Meet the three specialized autonomous agents powering your live assessment. You can audition their voices, configure difficulty thresholds, or launch targeted 1-on-1 interviews.
+              Meet the three specialized professional autonomous agents powering your live assessment. You can audition their voices, configure difficulty thresholds, or launch targeted 1-on-1 interviews.
             </p>
           </div>
 
@@ -216,7 +213,7 @@ export default function AIAgentsDirectoryPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push('/interview');
+                      handleMockInterview(agent.id);
                     }}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 border border-cyan-500/30 text-cyan-300 hover:text-white text-xs font-bold transition"
                   >
@@ -308,7 +305,7 @@ export default function AIAgentsDirectoryPage() {
               </div>
 
               <button
-                onClick={() => router.push('/interview')}
+                onClick={() => handleMockInterview(activeAgentData.id)}
                 className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95"
               >
                 <Play size={13} className="fill-white" />
