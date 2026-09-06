@@ -36,499 +36,6 @@ import {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://jynex-backend.onrender.com';
 
-/* -------------------------------------------------------------------------- */
-/*                     FULL-FRAME LIVE AI AVATAR ENGINE                       */
-/* -------------------------------------------------------------------------- */
-
-interface LiveAiAvatarProps {
-  persona: 'alex' | 'emma' | 'sarah';
-  isSpeaking: boolean;
-  isCandidateSpeaking: boolean;
-  remoteVideoTrack?: any;
-}
-
-interface PersonaConfig {
-  name: string;
-  role: string;
-  gender: 'male' | 'female';
-  imageUrl: string;
-  mouth: {
-    cx: number;
-    cy: number;
-    w: number;
-    h: number;
-  };
-  eyes: {
-    leftX: number;
-    rightX: number;
-    y: number;
-    w: number;
-    h: number;
-  };
-  skinTone: string;
-  lipColor: string;
-  lipHighlight: string;
-}
-
-const PERSONAS: Record<'alex' | 'emma' | 'sarah', PersonaConfig> = {
-  alex: {
-    name: 'Alex',
-    role: 'Technical Lead',
-    gender: 'male',
-    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
-    mouth: { cx: 0.50, cy: 0.655, w: 0.16, h: 0.055 },
-    eyes: { leftX: 0.43, rightX: 0.57, y: 0.42, w: 0.065, h: 0.03 },
-    skinTone: 'rgb(222, 178, 150)',
-    lipColor: 'rgba(180, 110, 100, 0.85)',
-    lipHighlight: 'rgba(215, 145, 135, 0.4)'
-  },
-  emma: {
-    name: 'Emma',
-    role: 'Behavioral Lead',
-    gender: 'female',
-    imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80',
-    mouth: { cx: 0.50, cy: 0.635, w: 0.155, h: 0.05 },
-    eyes: { leftX: 0.43, rightX: 0.57, y: 0.40, w: 0.065, h: 0.03 },
-    skinTone: 'rgb(230, 192, 172)',
-    lipColor: 'rgba(195, 105, 115, 0.88)',
-    lipHighlight: 'rgba(230, 140, 150, 0.45)'
-  },
-  sarah: {
-    name: 'Sarah',
-    role: 'Hiring Lead',
-    gender: 'female',
-    imageUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=800&q=80',
-    mouth: { cx: 0.495, cy: 0.64, w: 0.15, h: 0.048 },
-    eyes: { leftX: 0.43, rightX: 0.56, y: 0.41, w: 0.065, h: 0.03 },
-    skinTone: 'rgb(225, 185, 165)',
-    lipColor: 'rgba(185, 95, 105, 0.88)',
-    lipHighlight: 'rgba(220, 135, 140, 0.45)'
-  }
-};
-
-function LiveAiAvatar({
-  persona,
-  isSpeaking,
-  isCandidateSpeaking,
-  remoteVideoTrack
-}: LiveAiAvatarProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [eqLevels, setEqLevels] = useState<number[]>([15, 25, 45, 30, 20]);
-  const remoteVideoContainerRef = useRef<HTMLDivElement | null>(null);
-
-  const personaConfig = PERSONAS[persona] || PERSONAS.alex;
-
-  // Preload persona image
-  useEffect(() => {
-    setImageLoaded(false);
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = personaConfig.imageUrl;
-    img.onload = () => {
-      imageRef.current = img;
-      setImageLoaded(true);
-    };
-  }, [personaConfig.imageUrl]);
-
-  // Agora remote video attachment if provided
-  useEffect(() => {
-    if (remoteVideoTrack && remoteVideoContainerRef.current) {
-      remoteVideoTrack.play(remoteVideoContainerRef.current);
-      return () => {
-        try {
-          remoteVideoTrack.stop();
-        } catch (e) {}
-      };
-    }
-  }, [remoteVideoTrack]);
-
-  // Dynamic Audio Visualizer bars animation
-  useEffect(() => {
-    if (!isSpeaking) {
-      setEqLevels([6, 8, 10, 8, 6]);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setEqLevels([
-        Math.floor(10 + Math.random() * 85),
-        Math.floor(20 + Math.random() * 95),
-        Math.floor(35 + Math.random() * 100),
-        Math.floor(25 + Math.random() * 90),
-        Math.floor(15 + Math.random() * 75)
-      ]);
-    }, 90);
-
-    return () => clearInterval(interval);
-  }, [isSpeaking]);
-
-  // Realistic Canvas Avatar Engine (Lip-Sync, Blinking, Breathing, Nodding)
-  useEffect(() => {
-    if (!imageLoaded || !canvasRef.current || !imageRef.current) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animId: number;
-    let startTime = performance.now();
-    let nextBlinkTime = startTime + 3000 + Math.random() * 2000;
-    let blinkDuration = 160; // ms
-    let currentMouthOpen = 0; // smoothed openness 0..1
-    let currentMouthWidth = 1; // smoothed phoneme width modifier
-
-    const render = (time: number) => {
-      const img = imageRef.current;
-      if (!img) return;
-
-      const cw = canvas.width;
-      const ch = canvas.height;
-
-      // Calculate object-cover dimensions
-      const imgRatio = img.width / img.height;
-      const canvasRatio = cw / ch;
-      let renderW = cw;
-      let renderH = ch;
-      let offX = 0;
-      let offY = 0;
-
-      if (imgRatio > canvasRatio) {
-        renderH = ch;
-        renderW = ch * imgRatio;
-        offX = (cw - renderW) / 2;
-      } else {
-        renderW = cw;
-        renderH = cw / imgRatio;
-        offY = (ch - renderH) / 2;
-      }
-
-      // Micro-breathing and subtle sway
-      const breathing = Math.sin(time * 0.0018) * 1.5;
-      const sway = Math.cos(time * 0.0012) * 1.0;
-
-      // Affirmatory listening nod when candidate speaks
-      let nod = 0;
-      if (isCandidateSpeaking && !isSpeaking) {
-        nod = Math.sin(time * 0.007) * 2.8;
-      }
-
-      ctx.save();
-      ctx.clearRect(0, 0, cw, ch);
-
-      // Draw base photo with subtle transform
-      ctx.translate(sway, breathing + nod);
-      ctx.drawImage(img, offX, offY, renderW, renderH);
-
-      // Lip-Sync Viseme Calculation
-      let targetMouthOpen = 0;
-      let targetMouthWidth = 1.0;
-
-      if (isSpeaking) {
-        // Multi-frequency harmonic wave simulating natural phoneme & syllable cadence
-        const w1 = Math.sin(time * 0.019) * 0.45;
-        const w2 = Math.cos(time * 0.029) * 0.35;
-        const w3 = Math.sin(time * 0.011) * 0.25;
-        const rawOpen = Math.max(0, w1 + w2 + w3);
-        targetMouthOpen = Math.min(1.0, rawOpen * 1.3);
-
-        // Viseme width variation (AA vs OO vs EE)
-        targetMouthWidth = 0.88 + Math.sin(time * 0.023) * 0.24;
-      }
-
-      // Smooth interpolation for fluid lifelike mouth motion
-      currentMouthOpen += (targetMouthOpen - currentMouthOpen) * 0.28;
-      currentMouthWidth += (targetMouthWidth - currentMouthWidth) * 0.25;
-
-      const mCfg = personaConfig.mouth;
-      const mouthCenterX = offX + renderW * mCfg.cx;
-      const mouthCenterY = offY + renderH * mCfg.cy;
-      const baseMouthW = renderW * mCfg.w;
-      const baseMouthH = renderH * mCfg.h;
-
-      // Dynamic mouth render if speaking or settling
-      if (currentMouthOpen > 0.04) {
-        const mw = (baseMouthW * currentMouthWidth) / 2;
-        const maxOpenH = baseMouthH * (1.2 + currentMouthOpen * 1.8);
-        const openH = maxOpenH * currentMouthOpen;
-
-        ctx.save();
-
-        // Subtle jaw drop shading
-        const jawGrad = ctx.createRadialGradient(
-          mouthCenterX, mouthCenterY + openH * 0.6, 2,
-          mouthCenterX, mouthCenterY + openH * 0.6, mw * 1.4
-        );
-        jawGrad.addColorStop(0, 'rgba(0,0,0,0.18)');
-        jawGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = jawGrad;
-        ctx.beginPath();
-        ctx.ellipse(mouthCenterX, mouthCenterY + openH * 0.6, mw * 1.2, openH * 1.1, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 1. Inner Oral Cavity
-        ctx.beginPath();
-        ctx.moveTo(mouthCenterX - mw, mouthCenterY);
-        ctx.bezierCurveTo(
-          mouthCenterX - mw * 0.5, mouthCenterY - openH * 0.35,
-          mouthCenterX + mw * 0.5, mouthCenterY - openH * 0.35,
-          mouthCenterX + mw, mouthCenterY
-        );
-        ctx.bezierCurveTo(
-          mouthCenterX + mw * 0.6, mouthCenterY + openH,
-          mouthCenterX - mw * 0.6, mouthCenterY + openH,
-          mouthCenterX - mw, mouthCenterY
-        );
-        ctx.closePath();
-
-        const oralGrad = ctx.createLinearGradient(mouthCenterX, mouthCenterY - openH * 0.3, mouthCenterX, mouthCenterY + openH);
-        oralGrad.addColorStop(0, '#150505');
-        oralGrad.addColorStop(0.6, '#280c0d');
-        oralGrad.addColorStop(1, '#1b0708');
-        ctx.fillStyle = oralGrad;
-        ctx.fill();
-
-        // 2. Realistic Upper Teeth
-        if (currentMouthOpen > 0.12) {
-          const teethW = mw * 0.65;
-          const teethH = Math.min(openH * 0.45, 9);
-          ctx.beginPath();
-          ctx.moveTo(mouthCenterX - teethW, mouthCenterY - openH * 0.05);
-          ctx.lineTo(mouthCenterX + teethW, mouthCenterY - openH * 0.05);
-          ctx.bezierCurveTo(
-            mouthCenterX + teethW * 0.8, mouthCenterY + teethH,
-            mouthCenterX - teethW * 0.8, mouthCenterY + teethH,
-            mouthCenterX - teethW, mouthCenterY - openH * 0.05
-          );
-          ctx.closePath();
-          ctx.fillStyle = 'rgba(245, 243, 238, 0.94)';
-          ctx.fill();
-
-          // Subtle interdental separation lines
-          ctx.strokeStyle = 'rgba(120, 100, 95, 0.35)';
-          ctx.lineWidth = 0.75;
-          ctx.beginPath();
-          ctx.moveTo(mouthCenterX, mouthCenterY - openH * 0.05);
-          ctx.lineTo(mouthCenterX, mouthCenterY + teethH * 0.85);
-          ctx.stroke();
-        }
-
-        // 3. Lower Tongue Highlight
-        if (currentMouthOpen > 0.25) {
-          ctx.beginPath();
-          ctx.ellipse(mouthCenterX, mouthCenterY + openH * 0.75, mw * 0.42, openH * 0.22, 0, 0, Math.PI);
-          ctx.fillStyle = 'rgba(180, 85, 95, 0.75)';
-          ctx.fill();
-        }
-
-        // 4. Upper Lip Overlay Contour
-        ctx.beginPath();
-        ctx.moveTo(mouthCenterX - mw * 1.05, mouthCenterY);
-        ctx.bezierCurveTo(
-          mouthCenterX - mw * 0.4, mouthCenterY - baseMouthH * 0.55,
-          mouthCenterX - mw * 0.1, mouthCenterY - baseMouthH * 0.65,
-          mouthCenterX, mouthCenterY - baseMouthH * 0.5
-        );
-        ctx.bezierCurveTo(
-          mouthCenterX + mw * 0.1, mouthCenterY - baseMouthH * 0.65,
-          mouthCenterX + mw * 0.4, mouthCenterY - baseMouthH * 0.55,
-          mouthCenterX + mw * 1.05, mouthCenterY
-        );
-        ctx.bezierCurveTo(
-          mouthCenterX + mw * 0.5, mouthCenterY - openH * 0.3,
-          mouthCenterX - mw * 0.5, mouthCenterY - openH * 0.3,
-          mouthCenterX - mw * 1.05, mouthCenterY
-        );
-        ctx.closePath();
-        ctx.fillStyle = personaConfig.lipColor;
-        ctx.fill();
-
-        // 5. Lower Lip Overlay Contour
-        ctx.beginPath();
-        ctx.moveTo(mouthCenterX - mw * 1.02, mouthCenterY);
-        ctx.bezierCurveTo(
-          mouthCenterX - mw * 0.5, mouthCenterY + openH,
-          mouthCenterX + mw * 0.5, mouthCenterY + openH,
-          mouthCenterX + mw * 1.02, mouthCenterY
-        );
-        ctx.bezierCurveTo(
-          mouthCenterX + mw * 0.6, mouthCenterY + openH + baseMouthH * 0.75,
-          mouthCenterX - mw * 0.6, mouthCenterY + openH + baseMouthH * 0.75,
-          mouthCenterX - mw * 1.02, mouthCenterY
-        );
-        ctx.closePath();
-        ctx.fillStyle = personaConfig.lipColor;
-        ctx.fill();
-
-        // Lip specular highlight
-        ctx.beginPath();
-        ctx.ellipse(mouthCenterX, mouthCenterY + openH + baseMouthH * 0.35, mw * 0.35, baseMouthH * 0.18, 0, 0, Math.PI * 2);
-        ctx.fillStyle = personaConfig.lipHighlight;
-        ctx.fill();
-
-        ctx.restore();
-      }
-
-      // Natural Human Eye Blinking
-      if (time > nextBlinkTime) {
-        const blinkProgress = (time - nextBlinkTime) / blinkDuration;
-        if (blinkProgress <= 1.0) {
-          const blinkFactor = Math.sin(blinkProgress * Math.PI);
-          const eCfg = personaConfig.eyes;
-          const leftEyeX = offX + renderW * eCfg.leftX;
-          const rightEyeX = offX + renderW * eCfg.rightX;
-          const eyeY = offY + renderH * eCfg.y;
-          const eyeW = renderW * eCfg.w;
-          const eyeH = renderH * eCfg.h * blinkFactor;
-
-          ctx.save();
-          ctx.fillStyle = personaConfig.skinTone;
-
-          // Left eyelid
-          ctx.beginPath();
-          ctx.ellipse(leftEyeX, eyeY, eyeW, Math.max(1, eyeH), 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.strokeStyle = 'rgba(50, 35, 30, 0.65)';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.ellipse(leftEyeX, eyeY + eyeH * 0.5, eyeW * 0.9, 1.5, 0, 0, Math.PI);
-          ctx.stroke();
-
-          // Right eyelid
-          ctx.beginPath();
-          ctx.ellipse(rightEyeX, eyeY, eyeW, Math.max(1, eyeH), 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.strokeStyle = 'rgba(50, 35, 30, 0.65)';
-          ctx.beginPath();
-          ctx.ellipse(rightEyeX, eyeY + eyeH * 0.5, eyeW * 0.9, 1.5, 0, 0, Math.PI);
-          ctx.stroke();
-
-          ctx.restore();
-        } else {
-          nextBlinkTime = time + 3200 + Math.random() * 2300;
-        }
-      }
-
-      ctx.restore();
-
-      animId = requestAnimationFrame(render);
-    };
-
-    animId = requestAnimationFrame(render);
-
-    return () => {
-      cancelAnimationFrame(animId);
-    };
-  }, [imageLoaded, isSpeaking, isCandidateSpeaking, personaConfig]);
-
-  return (
-    <div
-      className={`bg-slate-950 border rounded-2xl relative overflow-hidden shadow-2xl flex flex-col justify-between p-3.5 transition-all duration-300 ${
-        isSpeaking
-          ? 'border-cyan-400/80 shadow-[0_0_30px_rgba(6,182,212,0.28)]'
-          : 'border-slate-800/90'
-      }`}
-    >
-      {/* TOP METADATA BAR (SLEEK PROFESSIONAL OVERLAY) */}
-      <div className="w-full flex items-center justify-between text-xs z-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] shadow-lg">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-          </span>
-          <Sparkles size={11} className="text-cyan-400" />
-          <span>AI Interviewer ({persona.toUpperCase()})</span>
-        </div>
-
-        <div
-          className={`text-[10px] font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md border shadow-lg ${
-            isSpeaking
-              ? 'text-emerald-300 bg-emerald-950/80 border-emerald-500/50'
-              : 'text-slate-300 bg-slate-950/80 border-slate-800'
-          }`}
-        >
-          <span
-            className={`w-2 h-2 rounded-full ${
-              isSpeaking
-                ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]'
-                : 'bg-emerald-500/70'
-            }`}
-          />
-          <span className="font-medium">
-            {isSpeaking ? 'Speaking Live...' : 'Listening via Agora VAD'}
-          </span>
-        </div>
-      </div>
-
-      {/* FULL-FRAME VIDEO/CANVAS AVATAR STREAM */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
-        {remoteVideoTrack ? (
-          <div ref={remoteVideoContainerRef} className="w-full h-full object-cover" />
-        ) : (
-          <canvas
-            ref={canvasRef}
-            width={640}
-            height={360}
-            className="w-full h-full object-cover select-none pointer-events-none"
-          />
-        )}
-
-        {/* Subtle Depth Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/30 via-transparent to-slate-950/30 pointer-events-none" />
-      </div>
-
-      {/* BOTTOM FLOATING STATUS BAR WITH AUDIO EQUALIZER */}
-      <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/80 backdrop-blur-md p-2.5 rounded-xl border border-slate-800/80 shadow-xl">
-        <div className="flex items-center gap-2">
-          <div className="relative flex items-center justify-center">
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                isSpeaking
-                  ? 'bg-emerald-400 shadow-[0_0_10px_#10b981] animate-pulse'
-                  : 'bg-slate-400'
-              }`}
-            />
-          </div>
-          <div>
-            <span className="text-white font-bold text-xs block leading-tight">
-              {personaConfig.name} ({personaConfig.role})
-            </span>
-            <span className="text-[10px] text-slate-400 block font-medium">
-              {isSpeaking ? `${personaConfig.name} is speaking...` : 'Evaluating candidate responses in real time'}
-            </span>
-          </div>
-        </div>
-
-        {/* Dynamic Multi-Bar Frequency Equalizer */}
-        <div className="flex items-end gap-1 h-5 px-2 py-0.5 bg-slate-900/80 rounded-lg border border-slate-800/70">
-          {eqLevels.map((lvl, i) => (
-            <span
-              key={i}
-              className={`w-1 rounded-full transition-all duration-100 ${
-                isSpeaking
-                  ? 'bg-gradient-to-t from-cyan-500 to-emerald-400'
-                  : 'bg-slate-600'
-              }`}
-              style={{
-                height: `${Math.max(15, lvl)}%`,
-                opacity: isSpeaking ? 1 : 0.4
-              }}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                     QUESTION BANK & GENERATION LOGIC                       */
-/* -------------------------------------------------------------------------- */
-
 export interface QuestionItem {
   q: string;
   keywords: string[];
@@ -539,6 +46,7 @@ export interface QuestionItem {
   sarahNote: string;
 }
 
+// Comprehensive technical question bank per track
 const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
   'Full-Stack Engineering (React & Node.js)': [
     {
@@ -640,69 +148,153 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       keyConcept: 'PACELC Theorem & Distributed Trade-offs',
       alexNote: 'Thorough understanding of partition tolerance and replication latency.',
       emmaNote: 'Analytical and precise delivery.',
-      sarahNote: 'Candidate grasps core fundamentals for large-scale enterprise services.'
+      sarahNote: 'Understands fundamental distributed systems philosophy.'
     },
     {
-      q: 'How do you handle distributed transactions across microservices? When do you choose the Saga pattern vs Two-Phase Commit (2PC)?',
-      keywords: ['saga', '2pc', 'choreography', 'orchestration', 'transaction', 'compensating', 'distributed'],
-      defaultAnswer: 'Two-Phase Commit provides strong consistency but introduces high latency and blocking coordinator vulnerabilities. I use the Saga pattern with compensating transactions, either choreographed via event brokers or orchestrated via a state machine.',
-      keyConcept: 'Saga Pattern & Compensating Workflows',
-      alexNote: 'Excellent breakdown of orchestration vs choreography trade-offs.',
-      emmaNote: 'Very articulate, explains complex concepts without pausing.',
-      sarahNote: 'Senior-level understanding of eventual consistency.'
+      q: 'In an event-driven architecture utilizing Apache Kafka, how do you ensure strict message ordering, handle partition keys, and manage dead-letter queues?',
+      keywords: ['kafka', 'partition', 'message ordering', 'dead letter queue', 'consumer group', 'offset', 'at-least-once'],
+      defaultAnswer: 'Kafka guarantees ordering within a single partition. I assign consistent partition keys to related entities and handle unprocessable messages via dead-letter queues after retries to prevent blocking consumer offsets.',
+      keyConcept: 'Kafka Partition Ordering & DLQ Patterns',
+      alexNote: 'Mastery of Kafka partitioning and failure recovery mechanisms.',
+      emmaNote: 'Articulate explanation of asynchronous message handling.',
+      sarahNote: 'Enterprise-grade message streaming knowledge.'
     },
     {
-      q: 'How do you design an event-driven system with Apache Kafka to guarantee exactly-once processing (EOS) semantics?',
-      keywords: ['kafka', 'idempotent', 'producer', 'consumer', 'offset', 'transaction', 'partition'],
-      defaultAnswer: 'Exactly-once semantics requires an idempotent producer, transactional producer APIs committing offsets and messages atomically, and idempotent consumer write sinks.',
-      keyConcept: 'Kafka Exactly-Once Semantics & Idempotent Writers',
-      alexNote: 'Outstanding mastery of Kafka transaction coordinators and consumer offsets.',
-      emmaNote: 'Clear, authoritative delivery with no hesitation.',
-      sarahNote: 'Ready for staff-level distributed systems engineering roles.'
+      q: 'How does the SAGA pattern solve distributed transaction challenges across microservices, and when should you choose Orchestration over Choreography?',
+      keywords: ['saga', 'orchestration', 'choreography', 'compensating', 'distributed transaction', 'workflow', 'event'],
+      defaultAnswer: 'SAGA breaks a distributed transaction into local transactions with compensating actions. Orchestration uses a central coordinator best for complex multi-step workflows, while Choreography relies on peer events best for simpler decoupled systems.',
+      keyConcept: 'SAGA Orchestration vs Choreography',
+      alexNote: 'Clear distinction between centralized coordination and decentralized event flows.',
+      emmaNote: 'Natural conversational pace with structured arguments.',
+      sarahNote: 'Proven architectural expertise in distributed state.'
+    },
+    {
+      q: 'How do you prevent cache stampede, also known as the thundering herd problem, in a high-traffic distributed caching layer?',
+      keywords: ['cache stampede', 'thundering herd', 'mutex', 'redis', 'probabilistic', 'ttl', 'early expiration'],
+      defaultAnswer: 'I use distributed mutex locks so only one worker recalculates the cache, alongside probabilistic early expiration algorithms like XFetch and background cache warmers to prevent sudden cache expirations.',
+      keyConcept: 'Cache Stampede Mitigation & Mutex Locking',
+      alexNote: 'Advanced knowledge of distributed caching failure scenarios.',
+      emmaNote: 'Confident delivery of sophisticated technical remedies.',
+      sarahNote: 'Prevents catastrophic production cascade failures.'
+    },
+    {
+      q: 'How do modern API Gateways and Service Meshes implement Circuit Breaker patterns and Dynamic Rate Limiting to prevent cascading failures?',
+      keywords: ['circuit breaker', 'api gateway', 'service mesh', 'envoy', 'resilience', 'fallback', 'cascading failure'],
+      defaultAnswer: 'Circuit breakers track failure rates across closed, open, and half-open states. If error thresholds exceed limits, requests fail fast with predefined fallback responses, shielding downstream services from resource exhaustion.',
+      keyConcept: 'Circuit Breaker State Machine & Cascade Prevention',
+      alexNote: 'Precise grasp of closed/open/half-open circuit states.',
+      emmaNote: 'Excellent structure and clarity of thought.',
+      sarahNote: 'Critical skill for resilient microservices.'
     }
   ],
-  'AI & Machine Learning Infrastructure': [
+  'Database Architecture (SQL vs NoSQL)': [
     {
-      q: 'How do you design a low-latency LLM serving pipeline for production traffic, optimizing KV cache memory and time-to-first-token (TTFT)?',
-      keywords: ['vllm', 'pagedattention', 'kv cache', 'speculative', 'latency', 'gpu', 'throughput', 'quantization'],
-      defaultAnswer: 'I use high-throughput serving engines like vLLM with PagedAttention to eliminate memory fragmentation in the KV cache, combined with continuous batching, FP8 or AWQ quantization, and speculative decoding.',
-      keyConcept: 'PagedAttention & Continuous Batching Optimization',
-      alexNote: 'Deep awareness of GPU memory bandwidth constraints and PagedAttention.',
-      emmaNote: 'Strong technical articulation and confident pacing.',
-      sarahNote: 'Directly applicable knowledge for state-of-the-art AI product teams.'
+      q: 'When architecting a high-throughput platform, how do you evaluate the structural tradeoffs between PostgreSQL and MongoDB or Cassandra?',
+      keywords: ['postgresql', 'mongodb', 'cassandra', 'sql', 'nosql', 'relational', 'schema', 'throughput', 'acid'],
+      defaultAnswer: 'PostgreSQL provides strict ACID guarantees and rich relational modeling for complex transactional data. MongoDB excels at flexible document hierarchies, while Cassandra provides masterless linear write scalability at the cost of eventual consistency.',
+      keyConcept: 'Relational ACID vs Wide-Column Eventual Consistency',
+      alexNote: 'Balanced trade-off evaluation without dogmatism.',
+      emmaNote: 'Crisp articulation of schema design decisions.',
+      sarahNote: 'Pragmatic database selection mindset.'
     },
     {
-      q: 'Can you compare Retrieval-Augmented Generation (RAG) architectures with fine-tuning for domain-specific enterprise knowledge?',
-      keywords: ['rag', 'vector', 'embeddings', 'fine-tuning', 'hallucination', 'chunking', 'retrieval', 'hybrid'],
-      defaultAnswer: 'RAG is optimal for frequently updated proprietary data and provides verifiable citations while minimizing hallucinations. Fine-tuning is best for teaching custom tone, specialized vocabularies, or rigid structured formats.',
-      keyConcept: 'RAG vs Parametric Fine-Tuning Trade-offs',
-      alexNote: 'Accurately articulated the complementary nature of hybrid search and adapters.',
-      emmaNote: 'Warm, pragmatic approach balancing costs and engineering effort.',
-      sarahNote: 'Strong alignment with cost-effective AI product delivery.'
+      q: 'Could you compare B-Trees against Log-Structured Merge-Trees (LSM-Trees), and explain how write amplification impacts high-write databases?',
+      keywords: ['b-tree', 'lsm-tree', 'write amplification', 'compaction', 'wal', 'sstable', 'memtable'],
+      defaultAnswer: 'B-Trees optimize for random reads by maintaining balanced disk-based node pages, incurring random write costs. LSM-Trees append writes to an in-memory MemTable and commit log, flushing SSTables sequentially and compacting later to minimize write amplification.',
+      keyConcept: 'B-Tree vs LSM-Tree Storage Engines',
+      alexNote: 'In-depth mastery of disk I/O, MemTables, and compaction.',
+      emmaNote: 'Explains complex engine internals with simplicity.',
+      sarahNote: 'Deep systems engineering capability.'
+    },
+    {
+      q: 'How do you read and interpret PostgreSQL EXPLAIN ANALYZE execution plans to diagnose slow queries and eliminate sequential scans?',
+      keywords: ['explain analyze', 'execution plan', 'sequential scan', 'index scan', 'cost', 'nested loop', 'hash join'],
+      defaultAnswer: 'I review actual execution times versus estimated planner costs, looking for sequential scans on large tables, costly disk-based hash joins, and misestimated row counts, then add targeted indexes or adjust memory work_mem parameters.',
+      keyConcept: 'Query Planner Cost Analysis & Index Tuning',
+      alexNote: 'Practical mastery of query optimization and cost analysis.',
+      emmaNote: 'Strong problem-solving diagnostic walkthrough.',
+      sarahNote: 'High value for performance-critical production databases.'
+    },
+    {
+      q: 'Why is external connection pooling like PgBouncer necessary in high-concurrency PostgreSQL environments, and how does transaction pooling work?',
+      keywords: ['pgbouncer', 'connection pooling', 'concurrency', 'fork', 'memory', 'transaction pooling'],
+      defaultAnswer: 'PostgreSQL spawns a separate OS process per client connection, which consumes memory and causes context switching overhead under heavy load. PgBouncer maintains a lean pool of server processes and recycles them at the transaction level.',
+      keyConcept: 'Process-per-Connection Overhead & PgBouncer Pooling',
+      alexNote: 'Essential knowledge of PostgreSQL operational mechanics.',
+      emmaNote: 'Direct, confident, and professional.',
+      sarahNote: 'Strong infrastructure and operational competency.'
+    }
+  ],
+  'AI & Cloud Infrastructure': [
+    {
+      q: 'How do you architect a production Retrieval-Augmented Generation (RAG) pipeline, and what chunking and re-ranking techniques optimize answer accuracy?',
+      keywords: ['rag', 'retrieval', 'embeddings', 'chunking', 'reranking', 'vector', 'context', 'llm'],
+      defaultAnswer: 'I split documents using semantic chunking with overlap, embed chunks into a vector database, perform hybrid vector-keyword retrieval, and pass top candidates through a cross-encoder re-ranker before feeding the prompt to the LLM.',
+      keyConcept: 'Hybrid Retrieval & Cross-Encoder Re-Ranking',
+      alexNote: 'Comprehensive architecture covering semantic chunking and re-ranking.',
+      emmaNote: 'Clear, modern AI systems literacy.',
+      sarahNote: 'Immediate capability to deliver generative AI solutions.'
+    },
+    {
+      q: 'How do vector databases perform approximate nearest neighbor (ANN) search using Hierarchical Navigable Small World (HNSW) graphs versus IVF indexes?',
+      keywords: ['hnsw', 'ivf', 'vector database', 'ann', 'cosine', 'graph', 'indexing', 'embeddings'],
+      defaultAnswer: 'HNSW builds a multi-layer geometric graph where upper layers enable fast long-range hops and lower layers perform fine-grained neighbor exploration. IVF clusters vectors into Voronoi cells to prune the search space during query time.',
+      keyConcept: 'HNSW Multi-Layer Graphs & IVF Vector Indexing',
+      alexNote: 'Outstanding algorithmic grasp of high-dimensional vector search.',
+      emmaNote: 'Articulate delivery of complex mathematical structures.',
+      sarahNote: 'Strong candidate for advanced AI engineering roles.'
+    },
+    {
+      q: 'What strategies do you deploy to optimize LLM serving latency, such as continuous batching, KV caching, and PagedAttention?',
+      keywords: ['vllm', 'continuous batching', 'kv cache', 'pagedattention', 'throughput', 'latency', 'ttft'],
+      defaultAnswer: 'I use serving frameworks like vLLM with PagedAttention to eliminate memory fragmentation in key-value caches, alongside continuous batching to schedule incoming generation tokens dynamically without waiting for full sequence completion.',
+      keyConcept: 'PagedAttention & Continuous Batching Scheduling',
+      alexNote: 'Cutting-edge knowledge of GPU memory management and LLM serving.',
+      emmaNote: 'Fluent, cutting-edge technical communication.',
+      sarahNote: 'Rare expertise in high-throughput AI inference deployment.'
+    },
+    {
+      q: 'How do you structure secure cloud infrastructure using Infrastructure as Code (Terraform), private VPC subnets, and automated IAM least-privilege policies?',
+      keywords: ['terraform', 'vpc', 'subnets', 'iam', 'least privilege', 'iac', 'kms', 'security'],
+      defaultAnswer: 'I organize modular Terraform code with remote state locking in S3/DynamoDB, place workloads in isolated private subnets behind NAT gateways, and enforce strict role-based IAM policies with time-bound temporary credentials.',
+      keyConcept: 'Modular IaC Architecture & Zero-Trust Cloud Networks',
+      alexNote: 'Solid adherence to cloud security best practices and IaC patterns.',
+      emmaNote: 'Clear, reassuring operational tone.',
+      sarahNote: 'Ensures cloud security governance and auditability.'
     }
   ]
 };
 
+// Infinite procedural fallback generator for extended interviews (15, 30+ mins)
 const generateDynamicQuestion = (track: string, index: number): QuestionItem => {
   const qNum = index + 1;
   const scenarios: QuestionItem[] = [
     {
-      q: `Scenario #${qNum} for ${track}: System Resiliency: How would you architect your service to gracefully handle cascading downstream failures and transient network partitions?`,
-      keywords: ['circuit breaker', 'retry', 'exponential backoff', 'jitter', 'fallback', 'bulkhead', 'timeout'],
-      defaultAnswer: 'I implement circuit breakers with exponential backoff and jitter, combined with bulkhead isolation to prevent worker thread pool starvation across dependent services.',
-      keyConcept: `Fault Tolerance & Circuit Breaking #${qNum}`,
-      alexNote: 'Clear architectural safeguards against cascading failures.',
-      emmaNote: 'High technical composure, clear system explanations.',
-      sarahNote: 'Shows dependable engineering judgment in critical infrastructure.'
+      q: `Scenario #${qNum} for ${track}: How would you architect an automated, zero-downtime multi-region failover and disaster recovery strategy for this subsystem under sudden traffic surges?`,
+      keywords: ['failover', 'disaster recovery', 'multi-region', 'latency', 'replication', 'dns', 'rto', 'rpo'],
+      defaultAnswer: 'I would configure active-active multi-region deployment with latency-based DNS routing, automated database cross-region replication, and health check-driven circuit breakers with predefined RTO and RPO targets.',
+      keyConcept: `Multi-Region Disaster Recovery & Geo-Redundancy #${qNum}`,
+      alexNote: 'Strong grasp of cross-region high-availability patterns.',
+      emmaNote: 'Confident articulation of operational risk mitigation.',
+      sarahNote: 'Ready for staff-level architectural responsibility.'
     },
     {
-      q: `Scenario #${qNum} for ${track}: Performance Optimization: Walk me through your methodology for profiling high CPU and memory consumption in production services.`,
-      keywords: ['profiling', 'heap dump', 'flamegraph', 'cpu', 'memory leak', 'gc', 'metrics'],
-      defaultAnswer: 'I generate flame graphs to identify CPU hotspots, inspect heap snapshots for memory leaks across generation lifecycles, and cross-reference with distributed trace telemetry.',
-      keyConcept: `Production Profiling & Flame Graph Analysis #${qNum}`,
-      alexNote: 'Precise understanding of profiling tools and memory heap mechanics.',
-      emmaNote: 'Methodical communication style, easy to follow.',
-      sarahNote: 'Deep real-world troubleshooting experience.'
+      q: `Scenario #${qNum} for ${track}: Suppose your service experiences an unexpected 15x traffic surge causing cascading connection timeouts. Walk me through your step-by-step diagnostic and remediation process.`,
+      keywords: ['spike', 'timeout', 'bottleneck', 'metrics', 'profiling', 'autoscaling', 'caching', 'load balancer'],
+      defaultAnswer: 'I would immediately inspect APM metrics for bottleneck identification, enable degraded mode or rate limiting, trigger horizontal pod autoscaling, and inspect database connection pools.',
+      keyConcept: `Emergency Incident Response & Concurrency Bottlenecks #${qNum}`,
+      alexNote: 'Calm and methodical triage approach under pressure.',
+      emmaNote: 'Crisp communication during high-stress system degradation.',
+      sarahNote: 'Demonstrates deep ownership of production reliability.'
+    },
+    {
+      q: `Scenario #${qNum} for ${track}: How do you design and enforce end-to-end security, data encryption at rest and in transit, and secret rotation across microservices?`,
+      keywords: ['encryption', 'tls', 'kms', 'secrets', 'rotation', 'iam', 'zero trust', 'audit'],
+      defaultAnswer: 'I adopt a Zero Trust model with mutual TLS for inter-service communication, envelope encryption using KMS keys, and automated secret rotation via cloud secret management services.',
+      keyConcept: `Zero-Trust Architecture & Secret Rotation #${qNum}`,
+      alexNote: 'Excellent adherence to defense-in-depth security principles.',
+      emmaNote: 'Professional and structured explanation of security controls.',
+      sarahNote: 'Fully aligns with enterprise security compliance standards.'
     },
     {
       q: `Scenario #${qNum} for ${track}: Behavioral Deep-Dive: Describe a scenario where you had to negotiate technical debt versus delivering new business features under strict executive deadlines.`,
@@ -716,10 +308,6 @@ const generateDynamicQuestion = (track: string, index: number): QuestionItem => 
   ];
   return scenarios[index % scenarios.length];
 };
-
-/* -------------------------------------------------------------------------- */
-/*                     MAIN LIVE INTERVIEW ROOM COMPONENT                     */
-/* -------------------------------------------------------------------------- */
 
 export default function FullLiveInterviewRoom() {
   const router = useRouter();
@@ -783,7 +371,7 @@ export default function FullLiveInterviewRoom() {
     setSecondsLeft(selectedDuration * 60);
   }, [selectedDuration]);
 
-  // Compute current question dynamically with fallback
+  // Compute current question dynamically with infinite fallback
   const currentQ: QuestionItem = useMemo(() => {
     if (dynamicQuestions[questionIndex]) {
       return dynamicQuestions[questionIndex];
@@ -797,10 +385,6 @@ export default function FullLiveInterviewRoom() {
 
   // Synchronized refs so speech recognition & synthesis never suffer from race conditions or closures
   const isAiSpeakingRef = useRef(false);
-  useEffect(() => {
-    isAiSpeakingRef.current = isAiSpeaking;
-  }, [isAiSpeaking]);
-
   const isMicMutedRef = useRef(isMicMuted);
   useEffect(() => { isMicMutedRef.current = isMicMuted; }, [isMicMuted]);
 
@@ -919,7 +503,7 @@ export default function FullLiveInterviewRoom() {
     }
   };
 
-  // Advance to next question function (triggered automatically by silence or Next Question button)
+  // Advance to next question function (triggered automatically by 1.8s silence)
   const advanceQuestion = () => {
     if (isEndingRef.current) return;
     if (silenceTimerRef.current) {
@@ -1007,7 +591,7 @@ export default function FullLiveInterviewRoom() {
 
     // Watchdog: In Chrome, speech synthesis can stall; ensure isAiSpeaking is NEVER stuck!
     const wordCount = text.split(/\s+/).length;
-    const maxSpeechTime = Math.max(4000, (wordCount / 2.2) * 1000 + 2000);
+    const maxSpeechTime = Math.max(5000, (wordCount / 2.2) * 1000 + 2500);
     if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
     safetyTimerRef.current = setTimeout(() => {
       if (isAiSpeakingRef.current) {
@@ -1039,7 +623,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isConfiguring, questionIndex, isEnding]);
 
-  // LIVE SPEECH RECOGNITION (PERSISTENT & BULLETPROOF WITH BARGE-IN)
+  // LIVE SPEECH RECOGNITION (PERSISTENT & BULLETPROOF)
   useEffect(() => {
     if (isConfiguring || typeof window === 'undefined') return;
 
@@ -1053,63 +637,54 @@ export default function FullLiveInterviewRoom() {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
-      if (isEndingRef.current) return;
+      // While AI is speaking, ignore incoming sound so echo doesn't trigger answers
+      if (isAiSpeakingRef.current || isEndingRef.current) return;
 
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         interimTranscript += event.results[i][0].transcript;
       }
 
-      const trimmed = interimTranscript.trim();
-      if (!trimmed) return;
+      if (interimTranscript.trim().length > 0) {
+        const spokenText = interimTranscript;
+        setLiveAnswer(spokenText);
+        liveAnswerRef.current = spokenText;
 
-      // BARGE-IN: If candidate begins speaking, immediately stop AI TTS so candidate answer is cleanly captured
-      if (isAiSpeakingRef.current) {
-        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
+        const q = currentQRef.current;
+        const lower = spokenText.toLowerCase();
+        const matched = q.keywords.filter((kw) => lower.includes(kw));
+        const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / Math.max(1, q.keywords.length)) * 35)));
+        setLiveAccuracy(matchRatio);
+
+        const words = spokenText.split(/\s+/).length;
+        setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
+        
+        const fillerMatches = spokenText.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
+        setLiveFiller(fillerMatches.length);
+
+        setLiveScores({
+          comm: Math.min(98, 80 + Math.round(words * 0.4)),
+          tech: matchRatio,
+          conf: Math.max(75, 96 - fillerMatches.length * 4),
+          prob: Math.min(96, 82 + matched.length * 3)
+        });
+
+        if (matched.length >= 2) {
+          setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Advancing question difficulty.`);
+          setLiveGrammar('Sharp & Structured');
+          setLiveDecision('AI Agents approve response depth. Advancing to next evaluation topic.');
+        } else {
+          setLiveCorrection(`Try mentioning relevant terms like: ${q.keywords.slice(0, 3).join(', ')}.`);
+          setLiveGrammar('Developing Argument');
+          setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
         }
-        setIsAiSpeaking(false);
-        isAiSpeakingRef.current = false;
+
+        // SILENCE DETECTION: 1.8 second shant rehne par agla question auto advance hoga
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = setTimeout(() => {
+          advanceQuestion();
+        }, 1800);
       }
-
-      const spokenText = trimmed;
-      setLiveAnswer(spokenText);
-      liveAnswerRef.current = spokenText;
-
-      const q = currentQRef.current;
-      const lower = spokenText.toLowerCase();
-      const matched = q.keywords.filter((kw) => lower.includes(kw));
-      const matchRatio = Math.min(100, Math.max(65, Math.round(65 + (matched.length / Math.max(1, q.keywords.length)) * 35)));
-      setLiveAccuracy(matchRatio);
-
-      const words = spokenText.split(/\s+/).length;
-      setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
-      
-      const fillerMatches = spokenText.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
-      setLiveFiller(fillerMatches.length);
-
-      setLiveScores({
-        comm: Math.min(98, 80 + Math.round(words * 0.4)),
-        tech: matchRatio,
-        conf: Math.max(75, 96 - fillerMatches.length * 4),
-        prob: Math.min(96, 82 + matched.length * 3)
-      });
-
-      if (matched.length >= 2) {
-        setLiveCorrection(`Strong coverage of core concepts (${matched.join(', ')}). Advancing question difficulty.`);
-        setLiveGrammar('Sharp & Structured');
-        setLiveDecision('AI Agents approve response depth. Advancing to next evaluation topic.');
-      } else {
-        setLiveCorrection(`Try mentioning relevant terms like: ${q.keywords.slice(0, 3).join(', ')}.`);
-        setLiveGrammar('Developing Argument');
-        setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
-      }
-
-      // SILENCE DETECTION: 1.8 second silence triggers automatic next question advance
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = setTimeout(() => {
-        advanceQuestion();
-      }, 1800);
     };
 
     // Auto-restart if Chrome naturally pauses recognition due to silence
@@ -1226,20 +801,19 @@ export default function FullLiveInterviewRoom() {
           ctx.lineTo(i, height / 2 + wave);
         }
         ctx.stroke();
+
+        step++;
       }
 
-      step++;
       animationFrameId = requestAnimationFrame(render);
     };
 
     render();
 
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
+    return () => cancelAnimationFrame(animationFrameId);
   }, [isConfiguring, isMicMuted]);
 
-  // Countdown Session Timer
+  // Timer countdown
   useEffect(() => {
     if (isConfiguring || isEnding) return;
     const interval = setInterval(() => {
@@ -1340,6 +914,7 @@ export default function FullLiveInterviewRoom() {
       }
     } catch (err) {
       console.warn('AI evaluation fallback:', err);
+      // Fallback local storage object if backend evaluation fails
       const overall = Math.round((liveScores.tech * 0.35) + (liveScores.comm * 0.3) + (liveScores.conf * 0.2) + (liveScores.prob * 0.15));
       const resultsData = {
         overall_score: overall,
@@ -1374,37 +949,32 @@ export default function FullLiveInterviewRoom() {
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold">
                 <Sliders size={13} /> Session Configuration
               </div>
-              <h2 className="text-2xl font-black tracking-tight text-white uppercase">
-                Configure Your Live AI Interview
-              </h2>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Customize your technical track, interview duration, and AI interviewer persona.
-              </p>
+              <h2 className="text-2xl font-black text-white tracking-tight">Configure Your Live Interview Room</h2>
+              <p className="text-xs text-slate-400">Select your target track, session duration, and AI lead interviewer before launching.</p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Engineering Track</label>
-                <div className="grid grid-cols-1 gap-2">
-                  {Object.keys(TRACK_QUESTIONS).map((track) => (
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Interview Track / Role</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {['Full-Stack Engineering (React & Node.js)', 'Distributed Systems & Microservices', 'Database Architecture (SQL vs NoSQL)', 'AI & Cloud Infrastructure'].map((track) => (
                     <button
                       key={track}
                       onClick={() => setSelectedTrack(track)}
-                      className={`p-3 rounded-xl border text-left text-xs font-semibold transition flex items-center justify-between ${
+                      className={`p-3 rounded-xl border text-left text-xs font-semibold transition ${
                         selectedTrack === track
-                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-lg'
-                          : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white'
+                          ? 'bg-cyan-600/20 border-cyan-500 text-white shadow-lg shadow-cyan-500/10'
+                          : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                       }`}
                     >
-                      <span>{track}</span>
-                      {selectedTrack === track && <CheckCircle2 size={15} className="text-cyan-400" />}
+                      {track}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Interview Duration</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">Session Duration</label>
                 <div className="grid grid-cols-3 gap-3">
                   {[10, 15, 30].map((mins) => (
                     <button
@@ -1478,36 +1048,35 @@ export default function FullLiveInterviewRoom() {
             </span>
           </Link>
 
-          <div className="h-4 w-px bg-slate-800" />
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-300">{selectedTrack}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
-              Q#{questionIndex + 1}
-            </span>
+          <div className="h-4 w-[1px] bg-slate-800" />
+
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            Live Agora WebRTC • {selectedTrack.split(' ')[0]} • Question {questionIndex + 1}
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3.5 py-1.5 rounded-xl font-mono text-xs">
-            <Clock size={13} className="text-cyan-400" />
-            <span className="text-cyan-300 font-bold">{formatTimer(secondsLeft)}</span>
+        {/* Center Timer */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-slate-300 font-mono text-sm bg-slate-900/90 px-3.5 py-1.5 rounded-xl border border-slate-800 shadow-inner">
+            <Clock size={15} className="text-cyan-400" />
+            <span className="font-bold text-white tracking-wider">{formatTimer(secondsLeft)}</span>
+            <span className="text-xs text-slate-500">Remaining</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-            <div className="flex items-center gap-1 h-3">
-              <div className={`w-1 bg-cyan-400 rounded-full ${isAiSpeaking ? 'h-3 animate-pulse' : 'h-1.5'}`} />
-              <div className={`w-1 bg-purple-400 rounded-full ${isAiSpeaking ? 'h-4 animate-pulse' : 'h-2'}`} />
-              <div className={`w-1 bg-blue-400 rounded-full ${isAiSpeaking ? 'h-5 animate-pulse' : 'h-1.5'}`} />
-            </div>
+          <div className="flex items-center gap-1 h-5 px-2">
+            <div className={`w-1 bg-cyan-400 rounded-full ${isAiSpeaking ? 'h-5 animate-pulse' : 'h-2'}`} />
+            <div className={`w-1 bg-purple-400 rounded-full ${isAiSpeaking ? 'h-4 animate-bounce' : 'h-3'}`} />
+            <div className={`w-1 bg-blue-400 rounded-full ${isAiSpeaking ? 'h-5 animate-pulse' : 'h-1.5'}`} />
           </div>
-
-          <button
-            onClick={handleEndCall}
-            className="bg-rose-600/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 px-4 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-lg shadow-rose-600/10"
-          >
-            <PhoneOff size={14} /> End Interview
-          </button>
         </div>
+
+        <button
+          onClick={handleEndCall}
+          className="bg-rose-600/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 px-4 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-lg shadow-rose-600/10"
+        >
+          <PhoneOff size={14} /> End Interview
+        </button>
       </header>
 
       {/* MAIN VIEWPORT */}
@@ -1524,6 +1093,9 @@ export default function FullLiveInterviewRoom() {
             </Link>
             <Link href="/agents" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
               <Bot size={15} /> AI Agents
+            </Link>
+            <Link href="/results" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
+              <LineChart size={15} /> Analysis
             </Link>
             <Link href="/reports" className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900/60 transition text-xs font-medium">
               <FileText size={15} /> Reports
@@ -1550,12 +1122,56 @@ export default function FullLiveInterviewRoom() {
           {/* VIDEO CALL STREAM TILES */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 shrink-0">
             
-            {/* AI Speaking Avatar Tile with Full-Frame Realistic Video & Lip-Sync */}
-            <LiveAiAvatar
-              persona={targetAgent}
-              isSpeaking={isAiSpeaking}
-              isCandidateSpeaking={!isAiSpeaking && liveAnswer.trim().length > 0}
-            />
+            {/* AI Speaking Avatar Tile */}
+            <div className={`bg-slate-950 border rounded-2xl relative overflow-hidden shadow-xl flex flex-col justify-between p-3.5 transition-all ${
+              isAiSpeaking ? 'border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.25)]' : 'border-slate-800'
+            }`}>
+              <div className="w-full flex items-center justify-between text-xs z-10">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-medium text-[10px]">
+                  <Sparkles size={11} /> AI Interviewer ({targetAgent.toUpperCase()})
+                </span>
+                <span className={`text-[10px] font-mono flex items-center gap-1 px-2 py-0.5 rounded-md border ${
+                  isAiSpeaking 
+                    ? 'text-emerald-400 bg-emerald-950/60 border-emerald-500/40' 
+                    : 'text-slate-400 bg-slate-900/80 border-slate-800'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAiSpeaking ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
+                  {isAiSpeaking ? 'Speaking Live...' : 'Listening via Agora VAD'}
+                </span>
+              </div>
+
+              {/* Glowing Dynamic Orb Avatar with Speaking Motion */}
+              <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
+                <div className={`absolute rounded-full transition-all duration-700 ${
+                  isAiSpeaking 
+                    ? 'w-48 h-48 bg-cyan-500/30 blur-3xl animate-pulse' 
+                    : 'w-32 h-32 bg-blue-600/10 blur-2xl'
+                }`} />
+                <div className={`relative rounded-full p-1 transition-transform duration-300 ${
+                  isAiSpeaking ? 'scale-110 shadow-[0_0_40px_#06b6d4]' : 'scale-95'
+                } bg-gradient-to-tr from-cyan-400 via-blue-600 to-purple-600`}>
+                  <div className="w-24 h-24 rounded-full bg-[#070b1a] flex items-center justify-center border border-cyan-300/40 overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80"
+                      alt="AI Lead"
+                      className={`w-full h-full object-cover rounded-full transition-all ${isAiSpeaking ? 'brightness-110' : 'brightness-75'}`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full flex items-center justify-between text-xs z-10 bg-slate-950/70 backdrop-blur-md p-2 rounded-xl border border-slate-800/60">
+                <span className="text-slate-200 font-semibold flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${isAiSpeaking ? 'bg-emerald-400 shadow-[0_0_6px_#10b981]' : 'bg-slate-500'}`} />
+                  {targetAgent === 'sarah' ? 'Sarah (Hiring Lead)' : targetAgent === 'alex' ? 'Alex (Tech Lead)' : 'Emma (Behavioral Lead)'}
+                </span>
+                <div className="flex items-center gap-1 h-3">
+                  <span className={`w-0.5 bg-cyan-400 rounded-full ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
+                  <span className={`w-0.5 bg-cyan-400 rounded-full ${isAiSpeaking ? 'h-2 animate-bounce' : 'h-1'}`} />
+                  <span className={`w-0.5 bg-cyan-400 rounded-full ${isAiSpeaking ? 'h-full animate-bounce' : 'h-1'}`} />
+                </div>
+              </div>
+            </div>
 
             {/* Candidate Real Webcam Tile with Fallback Avatar */}
             <div className="bg-slate-950 border border-slate-800 rounded-2xl relative overflow-hidden shadow-xl flex flex-col justify-between p-3.5">
@@ -1655,14 +1271,6 @@ export default function FullLiveInterviewRoom() {
             </button>
 
             <button
-              onClick={advanceQuestion}
-              className="px-3.5 h-9 rounded-lg bg-cyan-600/25 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/30 font-medium text-xs flex items-center gap-1.5 transition shadow-lg shadow-cyan-600/10 ml-2"
-              title="Proceed to next question immediately"
-            >
-              <Play size={13} fill="currentColor" /> Next Question
-            </button>
-
-            <button
               onClick={handleEndCall}
               className="px-4 h-9 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs flex items-center gap-1.5 transition shadow-lg shadow-rose-600/20 ml-2"
             >
@@ -1686,20 +1294,9 @@ export default function FullLiveInterviewRoom() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
               <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                    <MessageSquare size={12} className="text-blue-400" /> Live Captured Speech
-                  </span>
-                  {liveAnswer && (
-                    <button
-                      onClick={advanceQuestion}
-                      className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold transition"
-                      title="Advance to next question immediately"
-                    >
-                      Next →
-                    </button>
-                  )}
-                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                  <MessageSquare size={12} className="text-blue-400" /> Live Captured Speech
+                </span>
                 <p className="text-slate-200 text-[11px] leading-relaxed italic bg-slate-950/40 p-2 rounded-lg border border-slate-800/60 max-h-16 overflow-y-auto">
                   "{liveAnswer || (isAiSpeaking ? `AI is asking Question #${questionIndex + 1}...` : 'Listening for your response...')}"
                 </p>
@@ -1801,122 +1398,126 @@ export default function FullLiveInterviewRoom() {
 
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Speech Velocity (WPM)</span>
-                <span className="font-mono text-cyan-400 font-bold">{liveWpm} WPM</span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-cyan-400 rounded-full transition-all duration-300" style={{ width: `${Math.min(100, (liveWpm / 180) * 100)}%` }} />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Filler Words</span>
-                <span className="font-mono text-amber-400 font-bold">{liveFiller} detected</span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-400 rounded-full transition-all duration-300" style={{ width: `${Math.min(100, liveFiller * 20)}%` }} />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Technical Accuracy</span>
-                <span className="font-mono text-emerald-400 font-bold">{liveScores.tech}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-400 rounded-full transition-all duration-300" style={{ width: `${liveScores.tech}%` }} />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Communication Clarity</span>
-                <span className="font-mono text-blue-400 font-bold">{liveScores.comm}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-400 rounded-full transition-all duration-300" style={{ width: `${liveScores.comm}%` }} />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Confidence Level</span>
-                <span className="font-mono text-purple-400 font-bold">{liveScores.conf}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-400 rounded-full transition-all duration-300" style={{ width: `${liveScores.conf}%` }} />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-400">Problem Solving Depth</span>
-                <span className="font-mono text-indigo-400 font-bold">{liveScores.prob}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-400 rounded-full transition-all duration-300" style={{ width: `${liveScores.prob}%` }} />
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-800/80">
-              <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 flex items-center gap-1.5">
-                  <Smile size={12} className="text-cyan-400" /> Sentiment / Tone
+                  <MessageSquare size={13} className="text-cyan-400" /> Communication
                 </span>
-                <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full">
-                  {liveEmotion}
-                </span>
+                <span className="font-bold text-white">{liveScores.comm}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.comm}%` }}
+                />
               </div>
             </div>
-          </div>
 
-          {/* DYNAMIC AUDIO WAVEFORM VISUALIZER */}
-          <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 space-y-2">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-400 font-medium flex items-center gap-1.5">
-                <Activity size={12} className="text-cyan-400" /> Audio Waveform Spectrum
-              </span>
-              <span className="text-[10px] font-mono text-cyan-400">LIVE</span>
-            </div>
-            <canvas
-              ref={canvasRef}
-              width={260}
-              height={40}
-              className="w-full h-10 rounded-lg bg-slate-900/60"
-            />
-          </div>
-
-          {/* DYNAMIC REAL-TIME CHAT STREAM */}
-          <div className="flex-1 bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3 flex flex-col justify-between overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <MessageSquare size={12} className="text-blue-400" /> Dialogue Stream
-              </span>
-              <span className="text-[10px] font-mono text-slate-500">
-                {conversationHistory.length} turns
-              </span>
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Code2 size={13} className="text-blue-400" /> Technical Skills
+                </span>
+                <span className="font-bold text-white">{liveScores.tech}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.tech}%` }}
+                />
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
-              <div className="bg-blue-950/30 border border-blue-800/40 p-2 rounded-xl">
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-purple-400" /> Confidence
+                </span>
+                <span className="font-bold text-white">{liveScores.conf}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.conf}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Zap size={13} className="text-amber-400" /> Problem Solving
+                </span>
+                <span className="font-bold text-white">{liveScores.prob}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.prob}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 uppercase block font-semibold">Filler Words</span>
+                <span className="text-sm font-bold text-white">~ {liveFiller}</span>
+              </div>
+              <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 uppercase block font-semibold">Speaking Pace</span>
+                <span className="text-sm font-bold text-white">~ {liveWpm} WPM</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl flex items-center justify-between">
+              <span className="text-xs text-slate-400 font-medium">Emotion Status</span>
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                <Smile size={14} /> {liveEmotion}
+              </span>
+            </div>
+          </div>
+
+          {/* DYNAMIC TRANSCRIPTIONS STREAM */}
+          <div className="space-y-2 pt-2 border-t border-slate-800 flex-1 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between pb-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <CheckCircle2 size={14} className="text-cyan-400" /> Live Transcripts
+              </span>
+              <span className="text-[10px] text-cyan-400 font-mono font-medium">Q{questionIndex + 1} Continuous</span>
+            </div>
+
+            <div className="space-y-2 overflow-y-auto max-h-52 pr-1 text-xs">
+              <div className="bg-gradient-to-r from-blue-950/40 to-slate-900/80 border border-blue-500/30 p-2.5 rounded-xl space-y-1">
                 <span className="text-[10px] font-bold text-blue-400 block">AI Interviewer (Question #{questionIndex + 1})</span>
-                <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">{currentQ.q}</p>
+                <p className="text-white font-medium leading-snug">
+                  "{currentQ.q}"
+                </p>
               </div>
 
-              {liveAnswer && (
-                <div className="bg-slate-900/80 border border-slate-800 p-2 rounded-xl">
-                  <span className="text-[10px] font-bold text-emerald-400 block">{candidateName} (Speaking)</span>
-                  <p className="text-[11px] text-slate-200 mt-0.5 leading-relaxed italic">"{liveAnswer}"</p>
-                </div>
-              )}
+              <div className="bg-slate-900/40 border border-slate-800/60 p-2.5 rounded-xl space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 block">{candidateName} (Live Speech)</span>
+                <p className="text-slate-300 leading-snug italic">
+                  "{liveAnswer || (isAiSpeaking ? 'AI speaking...' : 'Listening for response...')}"
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* VOICE ACTIVITY SINE WAVE */}
+          <div className="space-y-2 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300">
+              <span className="flex items-center gap-1.5"><Mic size={14} className="text-cyan-400" /> Voice Activity</span>
+              <span className={`text-[10px] ${isMicMuted ? 'text-rose-400' : 'text-cyan-400'}`}>
+                {isMicMuted ? 'Muted' : 'Agora VAD Active'}
+              </span>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-2 rounded-xl flex flex-col items-center justify-center">
+              <canvas ref={canvasRef} width={260} height={36} className="w-full h-9" />
             </div>
           </div>
 
         </aside>
 
       </div>
-
     </div>
   );
 }
