@@ -30,7 +30,6 @@ import {
   Zap,
   Activity,
   Smile,
-  MonitorUp,
   Sliders,
   Play
 } from 'lucide-react';
@@ -47,6 +46,7 @@ export interface QuestionItem {
   sarahNote: string;
 }
 
+// Comprehensive technical question bank per track
 const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
   'Full-Stack Engineering (React & Node.js)': [
     {
@@ -75,73 +75,293 @@ const TRACK_QUESTIONS: Record<string, QuestionItem[]> = {
       alexNote: 'Flawless Redis sliding window architecture.',
       emmaNote: 'Zero hesitations, authoritative tone.',
       sarahNote: 'Candidate clears technical bar with high marks.'
+    },
+    {
+      q: 'When managing application state in complex React apps, how do you evaluate React Context vs Redux Toolkit vs Zustand, and how do you prevent unwanted component re-renders?',
+      keywords: ['state', 'context', 'redux', 'zustand', 're-render', 'selectors', 'memo', 'usecallback', 'usememo'],
+      defaultAnswer: 'Context is great for low-frequency global data like theme or auth. For complex high-frequency updates, Zustand or Redux Toolkit with atomic state selectors and React.memo prevent subtree re-rendering.',
+      keyConcept: 'Atomic State Management & Re-render Minimization',
+      alexNote: 'Deep appreciation of state atomicity and rendering lifecycles.',
+      emmaNote: 'Logical breakdown comparing trade-offs naturally.',
+      sarahNote: 'Shows practical software craftsmanship experience.'
+    },
+    {
+      q: 'Could you walk me through the Node.js Event Loop phases, specifically how libuv prioritizes the Microtask queue over the Macrotask queue?',
+      keywords: ['event loop', 'libuv', 'microtask', 'macrotask', 'process.nexttick', 'promise', 'setimmediate', 'timers'],
+      defaultAnswer: 'The Node.js event loop runs in distinct phases: timers, pending callbacks, poll, check, and close. Between every phase, libuv drains the microtask queue—prioritizing process.nextTick and Promise callbacks before executing macrotasks.',
+      keyConcept: 'libuv Event Loop & Microtask Draining',
+      alexNote: 'Spot-on explanation of process.nextTick and promise draining.',
+      emmaNote: 'Articulate delivery on an intricate low-level topic.',
+      sarahNote: 'Solid understanding of backend runtime internals.'
+    },
+    {
+      q: 'How do Server-Side Rendering (SSR), Static Site Generation (SSG), and Incremental Static Regeneration (ISR) differ in Next.js, and how do you troubleshoot hydration errors?',
+      keywords: ['ssr', 'ssg', 'isr', 'next.js', 'hydration', 'server', 'client', 'cache', 'revalidate'],
+      defaultAnswer: 'SSG generates static HTML at build time, SSR creates HTML per-request on the server, and ISR revalidates static pages in the background after a specified interval. Hydration errors occur when server-rendered HTML diverges from initial client state.',
+      keyConcept: 'Rendering Strategies & Client-Server Hydration',
+      alexNote: 'Comprehensive understanding of modern Next.js rendering architectures.',
+      emmaNote: 'Concise and structured answer without hesitation.',
+      sarahNote: 'Demonstrates practical production experience with Next.js.'
+    },
+    {
+      q: 'How do you handle database concurrency, race conditions, and idempotency in an e-commerce checkout flow with multiple simultaneous write requests?',
+      keywords: ['concurrency', 'race condition', 'idempotency', 'acid', 'transaction', 'optimistic', 'pessimistic', 'lock'],
+      defaultAnswer: 'I use database transactions with optimistic locking via version numbers, combined with distributed idempotency keys in Redis to ensure duplicate requests produce consistent results without double deductions.',
+      keyConcept: 'Optimistic Concurrency & Idempotency Keys',
+      alexNote: 'Robust solution covering both database locks and network retries.',
+      emmaNote: 'Methodical risk mitigation perspective.',
+      sarahNote: 'Instills confidence in handling critical business financial workflows.'
+    },
+    {
+      q: 'What are the main security vulnerabilities you safeguard against in modern full-stack web applications, and how do you mitigate XSS, CSRF, and CORS issues?',
+      keywords: ['security', 'xss', 'csrf', 'cors', 'sanitize', 'jwt', 'httponly', 'csp', 'headers'],
+      defaultAnswer: 'I mitigate XSS through automated HTML sanitization and Content Security Policy headers, defend against CSRF with SameSite HttpOnly cookies or anti-CSRF tokens, and enforce strict origin whitelisting on CORS headers.',
+      keyConcept: 'Defense-in-Depth Web Security & CSP',
+      alexNote: 'Strong modern security hygiene across frontend and backend.',
+      emmaNote: 'Calm, authoritative communication of compliance standards.',
+      sarahNote: 'High marks on security awareness and threat mitigation.'
+    },
+    {
+      q: 'When building real-time applications, how do you decide between WebSockets, Server-Sent Events (SSE), and Long Polling?',
+      keywords: ['websocket', 'sse', 'polling', 'real-time', 'bidirectional', 'http/2', 'connection', 'streaming'],
+      defaultAnswer: 'WebSockets provide full-duplex bidirectional communication best for collaborative apps or chat. SSE is lightweight and ideal for server-to-client unidirectional streams like AI generation over HTTP/2. Long polling is a fallback when neither is supported.',
+      keyConcept: 'Real-Time Communication Protocol Trade-offs',
+      alexNote: 'Excellent architectural comparison between duplex and unidirectional streams.',
+      emmaNote: 'Fluent articulation of network protocol capabilities.',
+      sarahNote: 'Technically well-rounded across network layers.'
+    },
+    {
+      q: 'Tell me about a challenging production outage or performance bottleneck you debugged in the past. What was your triage methodology?',
+      keywords: ['outage', 'debugging', 'metrics', 'apm', 'profiling', 'root cause', 'postmortem', 'triage'],
+      defaultAnswer: 'I isolate issues using APM metrics and distributed logs, roll back recent deployments if critical, reproduce in a staging sandbox with profiling tools, and publish a blameless post-mortem with preventative alerts.',
+      keyConcept: 'Production Incident Triage & Blameless Post-Mortem',
+      alexNote: 'Pragmatic engineering discipline during high-pressure situations.',
+      emmaNote: 'High emotional intelligence, focuses on system recovery and learning.',
+      sarahNote: 'Strong leadership traits and production maturity.'
     }
   ],
   'Distributed Systems & Microservices': [
     {
       q: 'How do you apply the CAP theorem and PACELC theorem when designing a globally distributed microservices architecture?',
       keywords: ['cap', 'pacelc', 'consistency', 'availability', 'partition', 'latency', 'tradeoff', 'distributed'],
-      defaultAnswer: 'The CAP theorem states that under a network partition, a system must choose between consistency and availability.',
+      defaultAnswer: 'The CAP theorem states that under a network partition, a system must choose between consistency and availability. The PACELC theorem extends this by noting that even under normal operation, one must choose between latency and consistency.',
       keyConcept: 'PACELC Theorem & Distributed Trade-offs',
-      alexNote: 'Thorough understanding of partition tolerance.',
+      alexNote: 'Thorough understanding of partition tolerance and replication latency.',
       emmaNote: 'Analytical and precise delivery.',
       sarahNote: 'Understands fundamental distributed systems philosophy.'
+    },
+    {
+      q: 'In an event-driven architecture utilizing Apache Kafka, how do you ensure strict message ordering, handle partition keys, and manage dead-letter queues?',
+      keywords: ['kafka', 'partition', 'message ordering', 'dead letter queue', 'consumer group', 'offset', 'at-least-once'],
+      defaultAnswer: 'Kafka guarantees ordering within a single partition. I assign consistent partition keys to related entities and handle unprocessable messages via dead-letter queues after retries to prevent blocking consumer offsets.',
+      keyConcept: 'Kafka Partition Ordering & DLQ Patterns',
+      alexNote: 'Mastery of Kafka partitioning and failure recovery mechanisms.',
+      emmaNote: 'Articulate explanation of asynchronous message handling.',
+      sarahNote: 'Enterprise-grade message streaming knowledge.'
+    },
+    {
+      q: 'How does the SAGA pattern solve distributed transaction challenges across microservices, and when should you choose Orchestration over Choreography?',
+      keywords: ['saga', 'orchestration', 'choreography', 'compensating', 'distributed transaction', 'workflow', 'event'],
+      defaultAnswer: 'SAGA breaks a distributed transaction into local transactions with compensating actions. Orchestration uses a central coordinator best for complex multi-step workflows, while Choreography relies on peer events best for simpler decoupled systems.',
+      keyConcept: 'SAGA Orchestration vs Choreography',
+      alexNote: 'Clear distinction between centralized coordination and decentralized event flows.',
+      emmaNote: 'Natural conversational pace with structured arguments.',
+      sarahNote: 'Proven architectural expertise in distributed state.'
+    },
+    {
+      q: 'How do you prevent cache stampede, also known as the thundering herd problem, in a high-traffic distributed caching layer?',
+      keywords: ['cache stampede', 'thundering herd', 'mutex', 'redis', 'probabilistic', 'ttl', 'early expiration'],
+      defaultAnswer: 'I use distributed mutex locks so only one worker recalculates the cache, alongside probabilistic early expiration algorithms like XFetch and background cache warmers to prevent sudden cache expirations.',
+      keyConcept: 'Cache Stampede Mitigation & Mutex Locking',
+      alexNote: 'Advanced knowledge of distributed caching failure scenarios.',
+      emmaNote: 'Confident delivery of sophisticated technical remedies.',
+      sarahNote: 'Prevents catastrophic production cascade failures.'
+    },
+    {
+      q: 'How do modern API Gateways and Service Meshes implement Circuit Breaker patterns and Dynamic Rate Limiting to prevent cascading failures?',
+      keywords: ['circuit breaker', 'api gateway', 'service mesh', 'envoy', 'resilience', 'fallback', 'cascading failure'],
+      defaultAnswer: 'Circuit breakers track failure rates across closed, open, and half-open states. If error thresholds exceed limits, requests fail fast with predefined fallback responses, shielding downstream services from resource exhaustion.',
+      keyConcept: 'Circuit Breaker State Machine & Cascade Prevention',
+      alexNote: 'Precise grasp of closed/open/half-open circuit states.',
+      emmaNote: 'Excellent structure and clarity of thought.',
+      sarahNote: 'Critical skill for resilient microservices.'
+    }
+  ],
+  'Database Architecture (SQL vs NoSQL)': [
+    {
+      q: 'When architecting a high-throughput platform, how do you evaluate the structural tradeoffs between PostgreSQL and MongoDB or Cassandra?',
+      keywords: ['postgresql', 'mongodb', 'cassandra', 'sql', 'nosql', 'relational', 'schema', 'throughput', 'acid'],
+      defaultAnswer: 'PostgreSQL provides strict ACID guarantees and rich relational modeling for complex transactional data. MongoDB excels at flexible document hierarchies, while Cassandra provides masterless linear write scalability at the cost of eventual consistency.',
+      keyConcept: 'Relational ACID vs Wide-Column Eventual Consistency',
+      alexNote: 'Balanced trade-off evaluation without dogmatism.',
+      emmaNote: 'Crisp articulation of schema design decisions.',
+      sarahNote: 'Pragmatic database selection mindset.'
+    },
+    {
+      q: 'Could you compare B-Trees against Log-Structured Merge-Trees (LSM-Trees), and explain how write amplification impacts high-write databases?',
+      keywords: ['b-tree', 'lsm-tree', 'write amplification', 'compaction', 'wal', 'sstable', 'memtable'],
+      defaultAnswer: 'B-Trees optimize for random reads by maintaining balanced disk-based node pages, incurring random write costs. LSM-Trees append writes to an in-memory MemTable and commit log, flushing SSTables sequentially and compacting later to minimize write amplification.',
+      keyConcept: 'B-Tree vs LSM-Tree Storage Engines',
+      alexNote: 'In-depth mastery of disk I/O, MemTables, and compaction.',
+      emmaNote: 'Explains complex engine internals with simplicity.',
+      sarahNote: 'Deep systems engineering capability.'
+    },
+    {
+      q: 'How do you read and interpret PostgreSQL EXPLAIN ANALYZE execution plans to diagnose slow queries and eliminate sequential scans?',
+      keywords: ['explain analyze', 'execution plan', 'sequential scan', 'index scan', 'cost', 'nested loop', 'hash join'],
+      defaultAnswer: 'I review actual execution times versus estimated planner costs, looking for sequential scans on large tables, costly disk-based hash joins, and misestimated row counts, then add targeted indexes or adjust memory work_mem parameters.',
+      keyConcept: 'Query Planner Cost Analysis & Index Tuning',
+      alexNote: 'Practical mastery of query optimization and cost analysis.',
+      emmaNote: 'Strong problem-solving diagnostic walkthrough.',
+      sarahNote: 'High value for performance-critical production databases.'
+    },
+    {
+      q: 'Why is external connection pooling like PgBouncer necessary in high-concurrency PostgreSQL environments, and how does transaction pooling work?',
+      keywords: ['pgbouncer', 'connection pooling', 'concurrency', 'fork', 'memory', 'transaction pooling'],
+      defaultAnswer: 'PostgreSQL spawns a separate OS process per client connection, which consumes memory and causes context switching overhead under heavy load. PgBouncer maintains a lean pool of server processes and recycles them at the transaction level.',
+      keyConcept: 'Process-per-Connection Overhead & PgBouncer Pooling',
+      alexNote: 'Essential knowledge of PostgreSQL operational mechanics.',
+      emmaNote: 'Direct, confident, and professional.',
+      sarahNote: 'Strong infrastructure and operational competency.'
+    }
+  ],
+  'AI & Cloud Infrastructure': [
+    {
+      q: 'How do you architect a production Retrieval-Augmented Generation (RAG) pipeline, and what chunking and re-ranking techniques optimize answer accuracy?',
+      keywords: ['rag', 'retrieval', 'embeddings', 'chunking', 'reranking', 'vector', 'context', 'llm'],
+      defaultAnswer: 'I split documents using semantic chunking with overlap, embed chunks into a vector database, perform hybrid vector-keyword retrieval, and pass top candidates through a cross-encoder re-ranker before feeding the prompt to the LLM.',
+      keyConcept: 'Hybrid Retrieval & Cross-Encoder Re-Ranking',
+      alexNote: 'Comprehensive architecture covering semantic chunking and re-ranking.',
+      emmaNote: 'Clear, modern AI systems literacy.',
+      sarahNote: 'Immediate capability to deliver generative AI solutions.'
+    },
+    {
+      q: 'How do vector databases perform approximate nearest neighbor (ANN) search using Hierarchical Navigable Small World (HNSW) graphs versus IVF indexes?',
+      keywords: ['hnsw', 'ivf', 'vector database', 'ann', 'cosine', 'graph', 'indexing', 'embeddings'],
+      defaultAnswer: 'HNSW builds a multi-layer geometric graph where upper layers enable fast long-range hops and lower layers perform fine-grained neighbor exploration. IVF clusters vectors into Voronoi cells to prune the search space during query time.',
+      keyConcept: 'HNSW Multi-Layer Graphs & IVF Vector Indexing',
+      alexNote: 'Outstanding algorithmic grasp of high-dimensional vector search.',
+      emmaNote: 'Articulate delivery of complex mathematical structures.',
+      sarahNote: 'Strong candidate for advanced AI engineering roles.'
+    },
+    {
+      q: 'What strategies do you deploy to optimize LLM serving latency, such as continuous batching, KV caching, and PagedAttention?',
+      keywords: ['vllm', 'continuous batching', 'kv cache', 'pagedattention', 'throughput', 'latency', 'ttft'],
+      defaultAnswer: 'I use serving frameworks like vLLM with PagedAttention to eliminate memory fragmentation in key-value caches, alongside continuous batching to schedule incoming generation tokens dynamically without waiting for full sequence completion.',
+      keyConcept: 'PagedAttention & Continuous Batching Scheduling',
+      alexNote: 'Cutting-edge knowledge of GPU memory management and LLM serving.',
+      emmaNote: 'Fluent, cutting-edge technical communication.',
+      sarahNote: 'Rare expertise in high-throughput AI inference deployment.'
+    },
+    {
+      q: 'How do you structure secure cloud infrastructure using Infrastructure as Code (Terraform), private VPC subnets, and automated IAM least-privilege policies?',
+      keywords: ['terraform', 'vpc', 'subnets', 'iam', 'least privilege', 'iac', 'kms', 'security'],
+      defaultAnswer: 'I organize modular Terraform code with remote state locking in S3/DynamoDB, place workloads in isolated private subnets behind NAT gateways, and enforce strict role-based IAM policies with time-bound temporary credentials.',
+      keyConcept: 'Modular IaC Architecture & Zero-Trust Cloud Networks',
+      alexNote: 'Solid adherence to cloud security best practices and IaC patterns.',
+      emmaNote: 'Clear, reassuring operational tone.',
+      sarahNote: 'Ensures cloud security governance and auditability.'
     }
   ]
 };
 
+// Infinite procedural fallback generator for extended interviews (15, 30+ mins)
 const generateDynamicQuestion = (track: string, index: number): QuestionItem => {
   const qNum = index + 1;
-  return {
-    q: `Question #${qNum} for ${track}: How do you ensure high availability, zero-downtime deployments, and circuit breaking across microservices?`,
-    keywords: ['failover', 'availability', 'deployment', 'latency', 'circuit breaker', 'microservices'],
-    defaultAnswer: 'I adopt automated health checks, blue-green deployment pipelines, and circuit breaker fallbacks.',
-    keyConcept: `Production System Resiliency #${qNum}`,
-    alexNote: 'Strong grasp of high-availability patterns.',
-    emmaNote: 'Confident delivery under deep examination.',
-    sarahNote: 'Demonstrates senior engineering decision making.'
-  };
+  const scenarios: QuestionItem[] = [
+    {
+      q: `Scenario #${qNum} for ${track}: How would you architect an automated, zero-downtime multi-region failover and disaster recovery strategy for this subsystem under sudden traffic surges?`,
+      keywords: ['failover', 'disaster recovery', 'multi-region', 'latency', 'replication', 'dns', 'rto', 'rpo'],
+      defaultAnswer: 'I would configure active-active multi-region deployment with latency-based DNS routing, automated database cross-region replication, and health check-driven circuit breakers with predefined RTO and RPO targets.',
+      keyConcept: `Multi-Region Disaster Recovery & Geo-Redundancy #${qNum}`,
+      alexNote: 'Strong grasp of cross-region high-availability patterns.',
+      emmaNote: 'Confident articulation of operational risk mitigation.',
+      sarahNote: 'Ready for staff-level architectural responsibility.'
+    },
+    {
+      q: `Scenario #${qNum} for ${track}: Suppose your service experiences an unexpected 15x traffic surge causing cascading connection timeouts. Walk me through your step-by-step diagnostic and remediation process.`,
+      keywords: ['spike', 'timeout', 'bottleneck', 'metrics', 'profiling', 'autoscaling', 'caching', 'load balancer'],
+      defaultAnswer: 'I would immediately inspect APM metrics for bottleneck identification, enable degraded mode or rate limiting, trigger horizontal pod autoscaling, and inspect database connection pools.',
+      keyConcept: `Emergency Incident Response & Concurrency Bottlenecks #${qNum}`,
+      alexNote: 'Calm and methodical triage approach under pressure.',
+      emmaNote: 'Crisp communication during high-stress system degradation.',
+      sarahNote: 'Demonstrates deep ownership of production reliability.'
+    },
+    {
+      q: `Scenario #${qNum} for ${track}: How do you design and enforce end-to-end security, data encryption at rest and in transit, and secret rotation across microservices?`,
+      keywords: ['encryption', 'tls', 'kms', 'secrets', 'rotation', 'iam', 'zero trust', 'audit'],
+      defaultAnswer: 'I adopt a Zero Trust model with mutual TLS for inter-service communication, envelope encryption using KMS keys, and automated secret rotation via cloud secret management services.',
+      keyConcept: `Zero-Trust Architecture & Secret Rotation #${qNum}`,
+      alexNote: 'Excellent adherence to defense-in-depth security principles.',
+      emmaNote: 'Professional and structured explanation of security controls.',
+      sarahNote: 'Fully aligns with enterprise security compliance standards.'
+    },
+    {
+      q: `Scenario #${qNum} for ${track}: Behavioral Deep-Dive: Describe a scenario where you had to negotiate technical debt versus delivering new business features under strict executive deadlines.`,
+      keywords: ['technical debt', 'tradeoff', 'deadline', 'priority', 'business value', 'refactor', 'compromise'],
+      defaultAnswer: 'I quantified the risk of technical debt in terms of system outages and team velocity, proposing an incremental refactoring plan alongside core feature delivery to align engineering health with business objectives.',
+      keyConcept: `Technical Debt Negotiation & Business Value Alignment #${qNum}`,
+      alexNote: 'Pragmatic balance between code quality and business delivery velocity.',
+      emmaNote: 'Empathetic stakeholder management and clear prioritization.',
+      sarahNote: 'Demonstrates strong leadership potential and strategic judgment.'
+    }
+  ];
+  return scenarios[index % scenarios.length];
 };
 
 export default function FullLiveInterviewRoom() {
   const router = useRouter();
 
-  const [isConfiguring, setIsConfiguring] = useState<boolean>(true);
-  const [selectedTrack, setSelectedTrack] = useState<string>('Full-Stack Engineering (React & Node.js)');
-  const [selectedDuration, setSelectedDuration] = useState<number>(15);
+  // Configuration Modal States
+  const [isConfiguring, setIsConfiguring] = useState(true);
+  const [selectedTrack, setSelectedTrack] = useState('Full-Stack Engineering (React & Node.js)');
+  const [selectedDuration, setSelectedDuration] = useState(15);
   const [targetAgent, setTargetAgent] = useState<'sarah' | 'alex' | 'emma'>('alex');
 
-  const [isMicMuted, setIsMicMuted] = useState<boolean>(false);
-  const [isVideoOff, setIsVideoOff] = useState<boolean>(false);
-  const [isSpeakerMuted, setIsSpeakerMuted] = useState<boolean>(false);
-  const [isScreenSharing, setIsScreenSharing] = useState<boolean>(false);
-  const [candidateName, setCandidateName] = useState<string>('Candidate');
+  // Call Controls State
+  const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
+  const [candidateName, setCandidateName] = useState('Candidate');
   const [cameraError, setCameraError] = useState<string | null>(null);
 
+  // Safe Session State
+  const [sessionData, setSessionData] = useState<{
+    startTime: number;
+    sessionId: string;
+  }>({
+    startTime: Date.now(),
+    sessionId: `INT-${Date.now()}`
+  });
+
+  // Agora State & Refs
   const [agoraClient, setAgoraClient] = useState<any>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
-  const [, setChannelName] = useState<string>('');
+  const [channelName, setChannelName] = useState<string>('');
   const [isAgoraConnected, setIsAgoraConnected] = useState<boolean>(false);
-  const isAgoraConnectedRef = useRef<boolean>(false);
 
-  const [isAiSpeaking, setIsAiSpeaking] = useState<boolean>(false);
-  const isAiSpeakingRef = useRef<boolean>(false);
+  // AI Speaking State & Voice
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
 
+  // Video, Canvas & Voice Refs
   const userVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [questionIndex, setQuestionIndex] = useState<number>(0);
-  const [secondsLeft, setSecondsLeft] = useState<number>(15 * 60);
-  const [isEnding, setIsEnding] = useState<boolean>(false);
+  // Dynamic Question & Real-Time Tracker States
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(15 * 60);
+  const [isEnding, setIsEnding] = useState(false);
   const [dynamicQuestions, setDynamicQuestions] = useState<Record<number, QuestionItem>>({});
 
+  // Sync Timer with Selected Duration
   useEffect(() => {
     setSecondsLeft(selectedDuration * 60);
   }, [selectedDuration]);
 
+  // Compute current question dynamically with infinite fallback
   const currentQ: QuestionItem = useMemo(() => {
     if (dynamicQuestions[questionIndex]) {
       return dynamicQuestions[questionIndex];
@@ -153,6 +373,8 @@ export default function FullLiveInterviewRoom() {
     return generateDynamicQuestion(selectedTrack, questionIndex);
   }, [selectedTrack, questionIndex, dynamicQuestions]);
 
+  // Synchronized refs so speech recognition & synthesis never suffer from race conditions or closures
+  const isAiSpeakingRef = useRef(false);
   const isMicMutedRef = useRef(isMicMuted);
   useEffect(() => { isMicMutedRef.current = isMicMuted; }, [isMicMuted]);
 
@@ -171,16 +393,18 @@ export default function FullLiveInterviewRoom() {
   const liveAnswerRef = useRef('');
   const safetyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [liveAnswer, setLiveAnswer] = useState<string>(currentQ.defaultAnswer);
-  const [liveAccuracy, setLiveAccuracy] = useState<number>(92);
-  const [liveCorrection, setLiveCorrection] = useState<string>('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
-  const [liveGrammar, setLiveGrammar] = useState<string>('Clear & Technical');
+  // LIVE DYNAMIC METRICS STATE
+  const [liveAnswer, setLiveAnswer] = useState(currentQ.defaultAnswer);
+  const [liveAccuracy, setLiveAccuracy] = useState(92);
+  const [liveCorrection, setLiveCorrection] = useState('Solid fundamentals. Add explicit real-world system tradeoffs for extra credit.');
+  const [liveGrammar, setLiveGrammar] = useState('Clear & Technical');
   const [liveScores, setLiveScores] = useState({ comm: 88, tech: 92, conf: 90, prob: 86 });
-  const [liveFiller, setLiveFiller] = useState<number>(1);
-  const [liveWpm, setLiveWpm] = useState<number>(136);
-  const [liveEmotion, setLiveEmotion] = useState<string>('Calm & Focused');
-  const [liveDecision, setLiveDecision] = useState<string>('Active evaluation in progress. AI agents analyzing response via Agora VAD loop.');
+  const [liveFiller, setLiveFiller] = useState(1);
+  const [liveWpm, setLiveWpm] = useState(136);
+  const [liveEmotion, setLiveEmotion] = useState('Calm & Focused');
+  const [liveDecision, setLiveDecision] = useState('Active evaluation in progress. AI agents analyzing response via Agora VAD loop.');
 
+  // Load Candidate Name
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const saved = localStorage.getItem('user') || localStorage.getItem('currentUser');
@@ -194,6 +418,7 @@ export default function FullLiveInterviewRoom() {
     }
   }, []);
 
+  // Agora Real-Time Voice Session Function
   const startAgoraCall = async (targetChannel: string) => {
     let client: any = null;
     let audioTrack: any = null;
@@ -201,26 +426,29 @@ export default function FullLiveInterviewRoom() {
     try {
       const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
 
+      // 1. Fetch dynamic token from backend
       const tokenRes = await fetch(`${BACKEND_URL}/api/agora/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channel_name: targetChannel, uid: 0 })
       });
-
+      
       if (!tokenRes.ok) throw new Error('Failed to fetch Agora token');
       const data = await tokenRes.json();
 
+      // 2. Create Agora client and join channel
       client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       setAgoraClient(client);
 
       await client.join(data.app_id, targetChannel, data.token, 0);
 
+      // 3. Create and publish local microphone audio track
       audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
       setLocalAudioTrack(audioTrack);
       await client.publish([audioTrack]);
       setIsAgoraConnected(true);
-      isAgoraConnectedRef.current = true;
 
+      // 4. Trigger backend to bring AI Agent into the channel and store agent_id safely
       const agentRes = await fetch(`${BACKEND_URL}/api/agora/start-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -235,38 +463,37 @@ export default function FullLiveInterviewRoom() {
         }
       }
 
-      // Explicit type 'audio' | 'video' to fix TypeScript compiler error
-      client.on('user-published', async (user: any, mediaType: 'audio' | 'video') => {
+      // 5. Subscribe to incoming AI Agent audio stream automatically via VAD
+      client.on('user-published', async (user: any, mediaType: string) => {
         await client.subscribe(user, mediaType);
         if (mediaType === 'audio') {
           try {
             user.audioTrack.play();
             setIsAiSpeaking(true);
-            isAiSpeakingRef.current = true;
           } catch (audioErr) {
             console.warn('Playback error:', audioErr);
           }
         }
       });
 
-      client.on('user-unpublished', (user: any, mediaType: 'audio' | 'video') => {
+      client.on('user-unpublished', (user: any, mediaType: string) => {
         if (mediaType === 'audio') {
           setIsAiSpeaking(false);
-          isAiSpeakingRef.current = false;
         }
       });
 
       client.on('connection-state-change', (curState: string) => {
         if (curState === 'DISCONNECTED') {
           setIsAgoraConnected(false);
-          isAgoraConnectedRef.current = false;
         }
       });
+
     } catch (err) {
       console.warn('Agora WebRTC initialization issue:', err);
     }
   };
 
+  // Advance to next question function (triggered automatically by 1.8s silence)
   const advanceQuestion = () => {
     if (isEndingRef.current) return;
     if (silenceTimerRef.current) {
@@ -277,6 +504,7 @@ export default function FullLiveInterviewRoom() {
     setQuestionIndex((prev) => {
       const nextIdx = prev + 1;
 
+      // Notify backend asynchronously
       fetch(`${BACKEND_URL}/api/interview/question`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -286,33 +514,31 @@ export default function FullLiveInterviewRoom() {
           question_index: nextIdx
         })
       })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && (data.question || data.q)) {
-            setDynamicQuestions((curr) => ({
-              ...curr,
-              [nextIdx]: {
-                q: data.question || data.q,
-                keywords: data.keywords || ['architecture', 'performance', 'system', 'tradeoff'],
-                defaultAnswer: 'Comprehensive architectural response.',
-                keyConcept: data.concept || 'Dynamic AI Follow-up',
-                alexNote: 'Assessing technical depth on dynamic topic.',
-                emmaNote: 'Evaluating clarity of explanation and tone.',
-                sarahNote: 'Assessing industry best practices.'
-              }
-            }));
-          }
-        })
-        .catch((err) => console.warn('Backend question sync note:', err));
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && (data.question || data.q)) {
+          setDynamicQuestions((curr) => ({
+            ...curr,
+            [nextIdx]: {
+              q: data.question || data.q,
+              keywords: data.keywords || ['architecture', 'performance', 'system', 'tradeoff'],
+              defaultAnswer: data.suggested_answer || 'Comprehensive architectural response.',
+              keyConcept: data.concept || 'Dynamic AI Follow-up',
+              alexNote: data.alex_note || 'Assessing technical depth on dynamic topic.',
+              emmaNote: data.emma_note || 'Evaluating clarity of explanation and tone.',
+              sarahNote: data.sarah_note || 'Assessing industry best practices.'
+            }
+          }));
+        }
+      })
+      .catch((err) => console.warn('Backend question sync note:', err));
 
       return nextIdx;
     });
   };
 
+  // Safe Text-To-Speech with Echo Prevention & Chrome Keep-Alive Watchdog
   const speakText = (text: string) => {
-    // If Agora remote cloud stream is active, cancel browser synthesis to prevent collision
-    if (isAgoraConnectedRef.current) return;
-
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isSpeakerMutedRef.current) return;
 
@@ -321,6 +547,7 @@ export default function FullLiveInterviewRoom() {
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
 
+    // Prevent Chrome garbage collection bug from cutting off speech
     (window as any).__activeUtterance = utterance;
 
     const stopSpeaking = () => {
@@ -345,11 +572,13 @@ export default function FullLiveInterviewRoom() {
       stopSpeaking();
     };
 
+    // Watchdog: In Chrome, speech synthesis can stall; ensure isAiSpeaking is NEVER stuck!
     const wordCount = text.split(/\s+/).length;
     const maxSpeechTime = Math.max(5000, (wordCount / 2.2) * 1000 + 2500);
     if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
     safetyTimerRef.current = setTimeout(() => {
       if (isAiSpeakingRef.current) {
+        console.warn('SpeechSynthesis watchdog safety reset');
         stopSpeaking();
       }
     }, maxSpeechTime);
@@ -357,9 +586,11 @@ export default function FullLiveInterviewRoom() {
     window.speechSynthesis.speak(utterance);
   };
 
+  // Trigger question speech on configuration close or questionIndex advance
   useEffect(() => {
     if (isConfiguring || isEnding) return;
 
+    // Reset live captured speech display for each new question
     setLiveAnswer('');
     liveAnswerRef.current = '';
 
@@ -375,6 +606,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isConfiguring, questionIndex, isEnding]);
 
+  // LIVE SPEECH RECOGNITION (PERSISTENT & BULLETPROOF)
   useEffect(() => {
     if (isConfiguring || typeof window === 'undefined') return;
 
@@ -388,6 +620,7 @@ export default function FullLiveInterviewRoom() {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
+      // While AI is speaking, ignore incoming sound so echo doesn't trigger answers
       if (isAiSpeakingRef.current || isEndingRef.current) return;
 
       let interimTranscript = '';
@@ -408,7 +641,7 @@ export default function FullLiveInterviewRoom() {
 
         const words = spokenText.split(/\s+/).length;
         setLiveWpm(Math.min(165, Math.max(110, Math.round(words * 3.2))));
-
+        
         const fillerMatches = spokenText.match(/\b(um|uh|like|you know|actually|basically)\b/gi) || [];
         setLiveFiller(fillerMatches.length);
 
@@ -429,6 +662,7 @@ export default function FullLiveInterviewRoom() {
           setLiveDecision('Evaluating answer depth... Sarah recommending follow-up clarification.');
         }
 
+        // SILENCE DETECTION: 1.8 second shant rehne par agla question auto advance hoga
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
           advanceQuestion();
@@ -436,6 +670,7 @@ export default function FullLiveInterviewRoom() {
       }
     };
 
+    // Auto-restart if Chrome naturally pauses recognition due to silence
     recognition.onend = () => {
       if (isRoomActiveRef.current && !isEndingRef.current && !isMicMutedRef.current) {
         try {
@@ -468,6 +703,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isConfiguring]);
 
+  // Real Webcam initialization
   useEffect(() => {
     let stream: MediaStream | null = null;
 
@@ -503,6 +739,7 @@ export default function FullLiveInterviewRoom() {
     };
   }, [isVideoOff]);
 
+  // Audio Canvas Visualizer
   useEffect(() => {
     if (isConfiguring) return;
     const canvas = canvasRef.current;
@@ -559,6 +796,7 @@ export default function FullLiveInterviewRoom() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isConfiguring, isMicMuted]);
 
+  // Timer countdown
   useEffect(() => {
     if (isConfiguring || isEnding) return;
     const interval = setInterval(() => {
@@ -573,18 +811,19 @@ export default function FullLiveInterviewRoom() {
     return () => clearInterval(interval);
   }, [isConfiguring, isEnding]);
 
+  // Automatic conclusion when the selected interview duration finishes
   useEffect(() => {
     if (isConfiguring || isEnding) return;
     if (secondsLeft === 0) {
       setIsEnding(true);
-      const wrapUpText = `Thank you ${candidateName}! Your scheduled interview duration of ${selectedDuration} minutes has completed. Compiling your final evaluation report now.`;
+      const wrapUpText = `Thank you ${candidateName}! Your scheduled interview duration of ${selectedDuration} minutes has completed. You answered ${questionIndex + 1} questions. Compiling your final evaluation report now.`;
       speakText(wrapUpText);
       const autoEndTimeout = setTimeout(() => {
         handleEndCall();
       }, 6500);
       return () => clearTimeout(autoEndTimeout);
     }
-  }, [secondsLeft, isConfiguring, isEnding, candidateName, selectedDuration]);
+  }, [secondsLeft, isConfiguring, isEnding, candidateName, selectedDuration, questionIndex]);
 
   const formatTimer = (s: number) => {
     const min = Math.floor(s / 60);
@@ -592,6 +831,7 @@ export default function FullLiveInterviewRoom() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
+  // Handle End Call & Cleanup Agora session
   const handleEndCall = async () => {
     setIsEnding(true);
     isEndingRef.current = true;
@@ -616,7 +856,7 @@ export default function FullLiveInterviewRoom() {
     } catch (err) {
       console.warn('Error disconnecting Agora client:', err);
     }
-
+    
     const agentId = localStorage.getItem('active_agent_id');
     if (agentId) {
       try {
@@ -631,6 +871,7 @@ export default function FullLiveInterviewRoom() {
       }
     }
 
+    // Persist session performance data for the /results analytics view
     try {
       const overall = Math.round((liveScores.tech * 0.35) + (liveScores.comm * 0.3) + (liveScores.conf * 0.2) + (liveScores.prob * 0.15));
       const resultsData = {
@@ -659,6 +900,7 @@ export default function FullLiveInterviewRoom() {
 
   return (
     <div className="h-screen w-screen bg-[#040711] text-slate-200 font-sans flex flex-col overflow-hidden select-none">
+      
       {/* PRE-INTERVIEW CONFIGURATION MODAL */}
       {isConfiguring && (
         <div className="absolute inset-0 z-50 bg-[#040711]/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
@@ -739,6 +981,10 @@ export default function FullLiveInterviewRoom() {
               onClick={() => {
                 const generatedChannel = `jynex-room-${Date.now()}`;
                 setChannelName(generatedChannel);
+                setSessionData({
+                  startTime: Date.now(),
+                  sessionId: `INT-${Date.now()}`
+                });
                 setIsConfiguring(false);
                 startAgoraCall(generatedChannel);
               }}
@@ -795,6 +1041,7 @@ export default function FullLiveInterviewRoom() {
 
       {/* MAIN VIEWPORT */}
       <div className="flex-1 flex overflow-hidden">
+        
         {/* LEFT NAV SIDEBAR */}
         <aside className="w-52 border-r border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 hidden lg:flex">
           <nav className="space-y-1.5">
@@ -831,8 +1078,10 @@ export default function FullLiveInterviewRoom() {
 
         {/* CENTER COLUMN: TILES + TRACKER + COLLABORATION */}
         <main className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gradient-to-b from-[#060a16] via-[#050812] to-[#03050c]">
+          
           {/* VIDEO CALL STREAM TILES */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 shrink-0">
+            
             {/* AI Speaking Avatar Tile */}
             <div className={`bg-slate-950 border rounded-2xl relative overflow-hidden shadow-xl flex flex-col justify-between p-3.5 transition-all ${
               isAiSpeaking ? 'border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.25)]' : 'border-slate-800'
@@ -851,6 +1100,7 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
 
+              {/* Glowing Dynamic Orb Avatar with Speaking Motion */}
               <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden">
                 <div className={`absolute rounded-full transition-all duration-700 ${
                   isAiSpeaking 
@@ -883,7 +1133,7 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
-            {/* Candidate Real Webcam Tile */}
+            {/* Candidate Real Webcam Tile with Fallback Avatar */}
             <div className="bg-slate-950 border border-slate-800 rounded-2xl relative overflow-hidden shadow-xl flex flex-col justify-between p-3.5">
               <div className="w-full flex justify-between items-center text-xs z-10">
                 <span className="text-[10px] text-slate-400 font-mono bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
@@ -936,6 +1186,7 @@ export default function FullLiveInterviewRoom() {
                 </span>
               </div>
             </div>
+
           </div>
 
           {/* CALL CONTROLS DOCK */}
@@ -980,17 +1231,6 @@ export default function FullLiveInterviewRoom() {
             </button>
 
             <button
-              onClick={() => setIsScreenSharing(!isScreenSharing)}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition border ${
-                isScreenSharing
-                  ? 'bg-cyan-600 text-white border-cyan-400 shadow-cyan-500/20'
-                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <MonitorUp size={15} />
-            </button>
-
-            <button
               onClick={handleEndCall}
               className="px-4 h-9 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs flex items-center gap-1.5 transition shadow-lg shadow-rose-600/20 ml-2"
             >
@@ -1018,7 +1258,7 @@ export default function FullLiveInterviewRoom() {
                   <MessageSquare size={12} className="text-blue-400" /> Live Captured Speech
                 </span>
                 <p className="text-slate-200 text-[11px] leading-relaxed italic bg-slate-950/40 p-2 rounded-lg border border-slate-800/60 max-h-16 overflow-y-auto">
-                  {`"${liveAnswer || (isAiSpeaking ? `AI is asking Question #${questionIndex + 1}...` : 'Listening for your response...')}"`}
+                  "{liveAnswer || (isAiSpeaking ? `AI is asking Question #${questionIndex + 1}...` : 'Listening for your response...')}"
                 </p>
               </div>
 
@@ -1092,6 +1332,7 @@ export default function FullLiveInterviewRoom() {
               </div>
             </div>
 
+            {/* Dynamic AI Decision Box */}
             <div className="bg-gradient-to-r from-cyan-950/40 via-purple-950/30 to-blue-950/40 border border-cyan-500/30 rounded-xl p-3 text-center">
               <div className="flex items-center justify-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wide">
                 <Zap size={14} className="animate-pulse text-cyan-400" />
@@ -1100,10 +1341,13 @@ export default function FullLiveInterviewRoom() {
               <p className="text-xs text-slate-300 mt-1 font-medium">{liveDecision}</p>
             </div>
           </div>
+
         </main>
 
         {/* RIGHT SIDEBAR: REAL-TIME DYNAMIC METRICS */}
         <aside className="w-80 border-l border-slate-800/80 bg-[#060914] p-4 flex flex-col justify-between shrink-0 overflow-y-auto hidden xl:flex space-y-4">
+          
+          {/* LIVE ANALYSIS DYNAMIC METRICS */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
@@ -1120,7 +1364,10 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.comm}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.comm}%` }} />
+                <div 
+                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.comm}%` }}
+                />
               </div>
             </div>
 
@@ -1132,7 +1379,10 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.tech}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.tech}%` }} />
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.tech}%` }}
+                />
               </div>
             </div>
 
@@ -1144,7 +1394,10 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.conf}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.conf}%` }} />
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.conf}%` }}
+                />
               </div>
             </div>
 
@@ -1156,7 +1409,10 @@ export default function FullLiveInterviewRoom() {
                 <span className="font-bold text-white">{liveScores.prob}%</span>
               </div>
               <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" style={{ width: `${liveScores.prob}%` }} />
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-300" 
+                  style={{ width: `${liveScores.prob}%` }}
+                />
               </div>
             </div>
 
@@ -1179,6 +1435,7 @@ export default function FullLiveInterviewRoom() {
             </div>
           </div>
 
+          {/* DYNAMIC TRANSCRIPTIONS STREAM */}
           <div className="space-y-2 pt-2 border-t border-slate-800 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between pb-1">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
@@ -1191,19 +1448,20 @@ export default function FullLiveInterviewRoom() {
               <div className="bg-gradient-to-r from-blue-950/40 to-slate-900/80 border border-blue-500/30 p-2.5 rounded-xl space-y-1">
                 <span className="text-[10px] font-bold text-blue-400 block">AI Interviewer (Question #{questionIndex + 1})</span>
                 <p className="text-white font-medium leading-snug">
-                  {`"${currentQ.q}"`}
+                  "{currentQ.q}"
                 </p>
               </div>
 
               <div className="bg-slate-900/40 border border-slate-800/60 p-2.5 rounded-xl space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 block">{candidateName} (Live Speech)</span>
                 <p className="text-slate-300 leading-snug italic">
-                  {`"${liveAnswer || (isAiSpeaking ? 'AI speaking...' : 'Listening for response...')}"`}
+                  "{liveAnswer || (isAiSpeaking ? 'AI speaking...' : 'Listening for response...')}"
                 </p>
               </div>
             </div>
           </div>
 
+          {/* VOICE ACTIVITY SINE WAVE */}
           <div className="space-y-2 pt-2 border-t border-slate-800">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300">
               <span className="flex items-center gap-1.5"><Mic size={14} className="text-cyan-400" /> Voice Activity</span>
@@ -1216,7 +1474,9 @@ export default function FullLiveInterviewRoom() {
               <canvas ref={canvasRef} width={260} height={36} className="w-full h-9" />
             </div>
           </div>
+
         </aside>
+
       </div>
     </div>
   );
